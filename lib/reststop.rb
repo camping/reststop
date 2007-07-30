@@ -136,12 +136,31 @@ module Camping
   #   # url is /foobar/1?format=RSS
   #   render(:foo) # render the RSS version of foo
   #
-  # If no format is specified, render() will behave like it normally
-  # does in Camping, by looking for a matching view method directly
+  # If no format is specified, render() will behave like it normally does in 
+  # Camping, by looking for a matching view method directly
   # in the Views module.
+  # Note that you can use this to make one of your format modules the default,
+  # simply by including it in the views module (after defining it). For example:
+  #
+  #   module Foobar::Views
+  #
+  #     module HTML
+  #       def foo
+  #         # ... render some HTML content
+  #       end
+  #     end
+  #     include HTML # HTML will now be the default format
+  #
+  #     module RSS
+  #       def foo
+  #         # ... render some RSS content
+  #       end
+  #     end
+  #
+  #   end
   #
   def render(action, format = nil)
-    format ||= @format || @input[:format]
+    format ||= @format || @input[:format] || @@default_format
     
     if format.nil?
       super(action)
@@ -155,6 +174,7 @@ module Camping
     end
   end
 
+  
   module Controllers
     class << self
       # Calling `REST '<resource name>'` creates a controller with the
