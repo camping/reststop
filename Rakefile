@@ -11,10 +11,10 @@ require 'hoe'
 include FileUtils
 require File.join(File.dirname(__FILE__), 'lib', 'reststop', 'version')
 
-AUTHOR = "URBACON\mzukowski"  # can also be an array of Authors
-EMAIL = "your contact email for bug fixes and info"
-DESCRIPTION = "description of gem"
-GEM_NAME = "reststop" # what ppl will type to install your gem
+AUTHOR = "Matt Zukowski"  # can also be an array of Authors
+EMAIL = "matt@roughest.net"
+DESCRIPTION = "Convenient RESTfulness for all your Camping needs (i.e. makes it easy to implement RESTful controllers in Camping)."
+GEM_NAME = "reststop"
 RUBYFORGE_PROJECT = "reststop" # The unix name for your project
 HOMEPATH = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 

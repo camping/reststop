@@ -3,7 +3,6 @@ README.txt
 CHANGELOG.txt
 Manifest.txt
 setup.rb
-lib/reststop/version.rb
 lib/reststop.rb
 test/test_helper.rb
 test/reststop_test.rb
