@@ -139,28 +139,20 @@ module Camping
   # If no format is specified, render() will behave like it normally does in 
   # Camping, by looking for a matching view method directly
   # in the Views module.
-  # Note that you can use this to make one of your format modules the default,
-  # simply by including it in the views module (after defining it). For example:
+  #
+  # You can also specify a default format module by calling 
+  # <tt>default_format</tt> after the format module definition.
+  # For example:
   #
   #   module Foobar::Views
-  #
   #     module HTML
-  #       def foo
-  #         # ... render some HTML content
-  #       end
+  #       # ... etc.
   #     end
-  #     include HTML # HTML will now be the default format
-  #
-  #     module RSS
-  #       def foo
-  #         # ... render some RSS content
-  #       end
-  #     end
-  #
+  #     default_format :XML
   #   end
   #
   def render(action, format = nil)
-    format ||= @format || @input[:format] || @@default_format
+    format ||= @format || @input[:format]
     
     if format.nil?
       super(action)
@@ -174,6 +166,14 @@ module Camping
     end
   end
 
+  module Views
+    class << self
+      def default_format(m)
+        mod = "Camping::Views::#{m.to_s}".constantize
+        Mab.class_eval{include mod}
+      end
+    end
+  end
   
   module Controllers
     class << self
