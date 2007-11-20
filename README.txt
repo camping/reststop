@@ -14,9 +14,9 @@ You can contact the author at:
 <b>Reststop makes it easy to write RESTful[http://en.wikipedia.org/wiki/Representational_State_Transfer] 
 applications in Camping[http://camping.rubyforge.org/files/README.html].</b>
 
-Reststop essentially gives you two things:
+Reststop essentially gives you three things:
 
-<b>Camping controllers that respond to the standard REST verbs:</b>
+<b>1. Camping controllers that respond to the standard REST verbs:</b>
 
 * create (POST)
 * read (GET)
@@ -26,7 +26,7 @@ Reststop essentially gives you two things:
 
 See the Camping::Controllers#REST method documentation for usage info.
 
-<b>Camping views grouped by output format:</b>
+<b>2. Camping views grouped by output format:</b>
 
 Your views module:
 
@@ -53,6 +53,17 @@ Your render call:
   
 See the render() method documentation for usage info.
 
+<b>3. Nice URLs to bring it all together:</b>
+
+For example:
+
+GET /kittens.rss
+GET /kittens/1.xml
+
+That is, say you have a "kittens" resource; you can make a GET
+request to http://yourapp.com/kittens.xml and get a list of kittens
+through your Kittens controller's <tt>list</tt>, formatted using your
+<tt>XML</tt> view module.
 
 ----
 
