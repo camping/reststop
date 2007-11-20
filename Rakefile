@@ -23,7 +23,7 @@ NAME = "reststop"
 REV = nil # UNCOMMENT IF REQUIRED: File.read(".svn/entries")[/committed-rev="(d+)"/, 1] rescue nil
 VERS = ENV['VERSION'] || (Reststop::VERSION::STRING + (REV ? ".#{REV}" : ""))
                           CLEAN.include ['**/.*.sw?', '*.gem', '.config']
-RDOC_OPTS = ['--quiet', '--title', "reststop documentation",
+RDOC_OPTS = ['--quiet', '--title', "reststop #{VERS} documentation",
     "--opname", "index.html",
     "--line-numbers", 
     "--main", "README",

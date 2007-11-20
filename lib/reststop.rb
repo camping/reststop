@@ -73,12 +73,15 @@ module Camping
   # Overrides Camping's render method to add the ability to specify a format 
   # module when rendering a view.
   #
-  # Format is specified in one of three ways (in this order of precedence):
+  # The format can also be specified in other ways (shown in this order 
+  # of precedence):
   #
   #   # By providing a second parameter to render()
   #     (eg: <tt>render(:foo, :HTML)</tt>)
   #   # By setting the @format variable
   #   # By providing a 'format' parameter in the request (i.e. @input[:format])
+  #   # By adding a file-format extension to the url (e.g. /items.xml or 
+  #     /items/2.html).
   #
   # For example, you could have:
   #
@@ -116,6 +119,11 @@ module Camping
   #   # url is /foobar/1?format=RSS
   #   render(:foo) # render the RSS version of foo
   #
+  # or 
+  #
+  #   # url is /foobar/1.rss
+  #   render(:foo) # render the RSS version of foo
+  #
   # If no format is specified, render() will behave like it normally does in 
   # Camping, by looking for a matching view method directly
   # in the Views module.
@@ -128,18 +136,33 @@ module Camping
   #     module HTML
   #       # ... etc.
   #     end
-  #     default_format :XML
+  #     default_format :HTML
   #   end
   #
   def render(action, format = nil)
-    format ||= @format || @input[:format]
+    format ||= @format
     
     if format.nil?
+      begin
+        ct = CONTENT_TYPE
+      rescue NameError
+        ct = 'text/html'
+      end
+      @headers['Content-Type'] = ct
+      
       super(action)
     else
       m = Mab.new({}, self)
       mod = "Camping::Views::#{format.to_s}".constantize
       m.extend mod
+      
+      begin
+        ct = mod::CONTENT_TYPE
+      rescue NameError
+        ct = 'text/html'
+      end
+      @headers['Content-Type'] = ct
+    
       s = m.capture{m.send(action)}
       s = m.capture{send(:layout){s}} if /^_/!~a[0].to_s and m.respond_to?(:layout)
       s
@@ -167,6 +190,14 @@ module Camping
   end
   
   module Controllers
+    def read_format #:nodoc:
+      if @input[:format]
+        @input[:format].upcase.intern
+      elsif @env['PATH_INFO'] =~ /\.([a-z]+)$/
+        $~[1].upcase.intern
+      end
+    end
+    
     class << self
       # Calling <tt>REST "<resource name>"</tt> creates a controller with the
       # appropriate routes and maps your REST methods to standard
@@ -223,11 +254,18 @@ module Camping
       #       # ...
       #     end
       #   end
+      #
+      # Additionally, format-based routing is possible. For example to get 
+      # a list of kittens in XML format, place a GET call to /kittens.xml.
+      # See the documentation for the render() method for more info.
+      #
       def REST(r, options = {})
-        crud = R "#{options[:prefix]}/#{r}/(.+)", "#{options[:prefix]}/#{r}"
+        crud = R "#{options[:prefix]}/#{r}(?:\.[a-z]+)?/(.+)", "#{options[:prefix]}/#{r}(?:\.[a-z]+)?"
         crud.module_eval do
           
           def get(id = nil) # :nodoc:
+            @format = read_format
+            puts "FORMAT: #{@format}"
             if id.nil? && @input[:id].nil?
                list
             else
@@ -237,16 +275,19 @@ module Camping
           
           
           def post # :nodoc:
+            @format = read_format
             create
           end
           
           
           def put(id = nil) # :nodoc:
+            @format = read_format
             update(id || @input[:id])
           end
           
           
           def delete(id = nil) # :nodoc:
+            @format = read_format
             destroy(id || @input[:id])
           end
         end

@@ -1,3 +1,9 @@
+=== In progress...
+
+  * It is now possible to specify the format for rendering a page by appending
+    it as a filename extension to the URL. For example: "/items.xml" or
+    "/items/5.rss". 
+
 === 0.1.0 :: 2007-07-30
 
-* First public release.
+  * First public release.
