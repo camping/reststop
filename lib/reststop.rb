@@ -56,6 +56,16 @@ module Camping
     end
   end
 
+  # Override Camping's query parsing method so that XML input is parsed
+  # into @input as an object usable more or less in the same manner as
+  # a standard Hash input. 
+  #
+  # This is necessary for dealing with ActiveResource calls, since ActiveResource
+  # submits its POST and PUT data as XML instead of the standard CGI query
+  # string.
+  #
+  # The method automatically determines whether input is XML or standard
+  # CGI query and parses it accordingly.
   def self.qsp(qs, d='&;', y=nil, z=H[])
     if qs.kind_of?(String) && !qs.nil? && !qs.empty? && qs =~ /^<\?xml/
       qxp(qs)
@@ -70,6 +80,8 @@ module Camping
     end
   end
 
+  # Parse an XML query (input) into XmlSimple object usable more or less
+  # the same way as a standard Hash input.
   def self.qxp(qxml)
     xml = XmlSimple.xml_in_string(qxml, 'forcearray' => false)
     xml
