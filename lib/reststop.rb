@@ -2,17 +2,18 @@
 # This file is part of Reststop.
 #
 # Reststop is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
+# it under the terms of the GNU Lesser General Public License as 
+# published by the Free Software Foundation; either version 3 of 
+# the License, or (at your option) any later version.
 #
 # Reststop is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# You should have received a copy of the GNU Lesser General Public 
+# License along with this program.  If not, see 
+# <http://www.gnu.org/licenses/>.
 #--
 
 
@@ -38,8 +39,11 @@ end
 #
 module Camping
   
+  
   # Override Camping's goes() mechanism so that we can add our stuff.
   # ... there must be a saner way to do this >:|
+  #
+  # Also modifies Camping's qsp() method to allow parsing of XML input data.
   #
   # FIXME: looks like this breaks auto-reloading when using the camping
   #        server for launching apps :(
@@ -51,8 +55,27 @@ module Camping
       eval S2.gsub('Camping', m.to_s), TOPLEVEL_BINDING
     end
   end
-  
-  # This override is stolen and slightly modified from the Camping mailing list;
+
+  def self.qsp(qs, d='&;', y=nil, z=H[])
+    if qs.kind_of?(String) && !qs.nil? && !qs.empty? && qs =~ /^<\?xml/
+      qxp(qs)
+    else  
+      m = proc {|_,o,n|o.u(n,&m)rescue([*o]<<n)}
+      (qs||'').
+          split(/[#{d}] */n).
+          inject((b,z=z,H[])[0]) { |h,p| k, v=un(p).split('=',2)
+              h.u(k.split(/[\]\[]+/).reverse.
+                  inject(y||v) { |x,i| H[i,x] },&m)
+          }
+    end
+  end
+
+  def self.qxp(qxml)
+    xml = XmlSimple.xml_in_string(qxml, 'forcearray' => false)
+    xml
+  end
+
+  # This override is taken and slightly modified from the Camping mailing list;
   # it fakes PUT/DELETE HTTP methods, since many browsers don't support them.
   #
   # In your forms you will have to add:
