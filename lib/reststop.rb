@@ -225,15 +225,17 @@ module Camping
   end
   
   module Controllers
-    def read_format #:nodoc:
-      if @input[:format]
-        @input[:format].upcase.intern
-      elsif @env['PATH_INFO'] =~ /\.([a-z]+)$/
-        $~[1].upcase.intern
-      end
-    end
+    
     
     class << self
+      def read_format(input, env) #:nodoc:
+        if input[:format]
+          input[:format].upcase.intern
+        elsif env['PATH_INFO'] =~ /\.([a-z]+)$/
+          $~[1].upcase.intern
+        end
+      end
+      
       # Calling <tt>REST "<resource name>"</tt> creates a controller with the
       # appropriate routes and maps your REST methods to standard
       # Camping controller mehods. This is meant to be used in your Controllers
@@ -295,35 +297,47 @@ module Camping
       # See the documentation for the render() method for more info.
       #
       def REST(r, options = {})
-        crud = R "#{options[:prefix]}/#{r}(?:\.[a-z]+)?/(.+)", "#{options[:prefix]}/#{r}(?:\.[a-z]+)?"
+        crud = R "#{options[:prefix]}/#{r}/([0-9a-zA-Z]+)/([a-z_]+)(?:\.[a-z]+)?",
+          "#{options[:prefix]}/#{r}/([0-9a-zA-Z]+)(?:\.[a-z]+)?",
+          "#{options[:prefix]}/#{r}/([a-z_]+)(?:\.[a-z]+)?",
+          "#{options[:prefix]}/#{r}(?:\.[a-z]+)?"
         crud.module_eval do
           
-          def get(id = nil) # :nodoc:
-            @format = read_format
-            puts "FORMAT: #{@format}"
-            if id.nil? && @input[:id].nil?
-               list
+          def get(id_or_custom_action = nil, custom_action =  nil) # :nodoc:
+            id = @input[:id] if @input[:id]
+            custom_action = @input[:action] if @input[:action]
+            
+            if self.methods.include? id_or_custom_action
+              custom_action ||= id_or_custom_action
+              id ||= nil
             else
-              read(id || @input[:id])
+              id ||= id_or_custom_action
+            end
+            
+            @format = Controllers.read_format(@input, @env)
+            if id.nil? && @input[:id].nil?
+              custom_action ? send(custom_action) : list
+            else
+              custom_action ? send(custom_action, id || @input[:id]) : read(id || @input[:id])
             end
           end
           
           
-          def post # :nodoc:
-            @format = read_format
-            create
+          def post(custom_action = nil) # :nodoc:
+            @format = Controllers.read_format(@input, @env)
+            custom_action ? send(custom_action) : create
           end
           
           
-          def put(id = nil) # :nodoc:
-            @format = read_format
-            update(id || @input[:id])
+          def put(id = nil, custom_action = nil) # :nodoc:
+            @format = Controllers.read_format(@input, @env)
+            custom_action ? send(custom_action, id || @input[:id]) : update(id || @input[:id])
           end
           
           
-          def delete(id = nil) # :nodoc:
-            @format = read_format
-            destroy(id || @input[:id])
+          def delete(id = nil, custom_action = nil) # :nodoc:
+            @format = Controllers.read_format(@input, @env)
+            custom_action ? send(custom_action, id || @input[:id]) : destroy(id || @input[:id])
           end
         end
         crud
