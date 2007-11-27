@@ -315,10 +315,15 @@ module Camping
             end
             
             @format = Controllers.read_format(@input, @env)
-            if id.nil? && @input[:id].nil?
-              custom_action ? send(custom_action) : list
-            else
-              custom_action ? send(custom_action, id || @input[:id]) : read(id || @input[:id])
+            
+            begin
+              if id.nil? && @input[:id].nil?
+                custom_action ? send(custom_action) : list
+              else
+                custom_action ? send(custom_action, id || @input[:id]) : read(id || @input[:id])
+              end
+            rescue NoMethodError => e
+              return no_method(e)
             end
           end
           
@@ -338,6 +343,17 @@ module Camping
           def delete(id = nil, custom_action = nil) # :nodoc:
             @format = Controllers.read_format(@input, @env)
             custom_action ? send(custom_action, id || @input[:id]) : destroy(id || @input[:id])
+          end
+          
+          private
+          def _error(message, status, e)
+            @status = status
+            "<strong>#{message}</strong>" +
+            "<pre style='color: #bbb'>#{e.backtrace.join("\n")}</pre>"
+          end
+          
+          def no_method(e)
+            _error("No method responds to this route (#{e}).", 404, e)
           end
         end
         crud
