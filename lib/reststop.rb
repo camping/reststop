@@ -18,17 +18,14 @@
 
 
 module Reststop
-  unless const_defined? 'VERSION'
-  	module VERSION #:nodoc:
-      MAJOR = 0
-      MINOR = 1
-      TINY  = 0
-  
-      STRING = [MAJOR, MINOR, TINY].join('.')
-    end
+	module VERSION #:nodoc:
+    MAJOR = 0
+    MINOR = 2
+    TINY  = 0
+
+    STRING = [MAJOR, MINOR, TINY].join('.')
   end
 end
-
 
 # Extends and overrides Camping for convenient RESTfulness.
 #
@@ -80,11 +77,11 @@ module Camping
     end
   end
 
-  # Parse an XML query (input) into XmlSimple object usable more or less
-  # the same way as a standard Hash input.
+  # Parse an XML query (input) into a Hash usable more or less
+  # the same way as a Camping's standard Hash input.
   def self.qxp(qxml)
-    xml = XmlSimple.xml_in_string(qxml, 'forcearray' => false)
-    xml
+    #xml = XmlSimple.xml_in_string(qxml, 'forcearray' => false)
+    H.new Hash.from_xml(qxml)
   end
 
   # This override is taken and slightly modified from the Camping mailing list;
@@ -183,7 +180,7 @@ module Camping
       rescue NameError
         ct = 'text/html'
       end
-      @headers['Content-Type'] = ct
+      @headers['Content-Type'] ||= ct
       
       super(action)
     else
@@ -303,6 +300,8 @@ module Camping
           "#{options[:prefix]}/#{r}(?:\.[a-z]+)?"
         crud.module_eval do
           
+          $LOG.debug("Creating RESTful controller for #{r.inspect} using Reststop #{::Reststop::VERSION::STRING}") if $LOG
+          
           def get(id_or_custom_action = nil, custom_action =  nil) # :nodoc:
             id = @input[:id] if @input[:id]
             custom_action = @input[:action] if @input[:action]
@@ -323,13 +322,17 @@ module Camping
                 custom_action ? send(custom_action, id || @input[:id]) : read(id || @input[:id])
               end
             rescue NoMethodError => e
+              # FIXME: we're treading NoMethodErrors are routing errors, but this is not necessarily the case!
               return no_method(e)
+            rescue ActiveRecord::RecordNotFound => e
+              return not_found(e)
             end
           end
           
           
           def post(custom_action = nil) # :nodoc:
             @format = Controllers.read_format(@input, @env)
+            puts @env.inspect
             custom_action ? send(custom_action) : create
           end
           
@@ -346,18 +349,52 @@ module Camping
           end
           
           private
-          def _error(message, status, e)
-            @status = status
-            "<strong>#{message}</strong>" +
-            "<pre style='color: #bbb'>#{e.backtrace.join("\n")}</pre>"
+          def _error(message, status_code, e)
+            @status = status_code
+            @message = message
+            begin
+              render "error_#{status_code}".intern
+            rescue NoMethodError
+              if @format.to_s == 'XML'
+                "<error code='#{status_code}'>#{@message}</error>"
+              else
+                "<strong>#{@message}</strong>" +
+                "<pre style='color: #bbb'><strong>#{e.class}: #{e}</strong>\n#{e.backtrace.join("\n")}</pre>"
+              end
+            end
           end
           
           def no_method(e)
-            _error("No method responds to this route (#{e}).", 404, e)
+            _error("No controller method responds to this route!", 404, e)
+          end
+          
+          def not_found(e)
+            _error("Record not found!", 404, e)
           end
         end
         crud
       end
+    end
+  end
+end
+
+module Markaby
+  class Builder
+    # Modifies Markaby's 'form' generator so that if a 'method' parameter
+    # is supplied, a hidden '_method' input is automatically added. 
+    def form(*args, &block)
+      options = args[0] if args && args[0] && args[0].kind_of?(Hash)
+      inside = capture &block
+      puts "BEFORE: #{inside}"
+      if options && options.has_key?(:method)
+        inside = input(:type => 'hidden', :name => '_method', :value => options[:method]) +
+          inside
+        if options[:method].to_s === 'put' || options[:method].to_s == 'delete'
+          options[:method] = 'post'
+        end
+      end
+      puts "AFTER: #{inside}"
+      tag!(:form, options || args[0]) {inside}
     end
   end
 end
