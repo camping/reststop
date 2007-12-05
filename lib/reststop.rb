@@ -385,7 +385,7 @@ module Markaby
     def form(*args, &block)
       options = args[0] if args && args[0] && args[0].kind_of?(Hash)
       inside = capture &block
-      puts "BEFORE: #{inside}"
+      
       if options && options.has_key?(:method)
         inside = input(:type => 'hidden', :name => '_method', :value => options[:method]) +
           inside
@@ -393,7 +393,7 @@ module Markaby
           options[:method] = 'post'
         end
       end
-      puts "AFTER: #{inside}"
+      
       tag!(:form, options || args[0]) {inside}
     end
   end
