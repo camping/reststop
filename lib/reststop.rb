@@ -375,7 +375,7 @@ module Camping
           end
           
           def no_method(e)
-            _error("No controller method responds to this route!", 404, e)
+            _error("No controller method responds to this route!", 501, e)
           end
           
           def not_found(e)
