@@ -304,6 +304,7 @@ module Camping
           
           def get(id_or_custom_action = nil, custom_action =  nil) # :nodoc:
             id = @input[:id] if @input[:id]
+            
             custom_action = @input[:action] if @input[:action]
             
             if self.methods.include? id_or_custom_action
@@ -312,6 +313,8 @@ module Camping
             else
               id ||= id_or_custom_action
             end
+            
+            id = id.to_i if id && id =~ /^[0-9]+$/
             
             @format = Controllers.read_format(@input, @env)
             
@@ -322,8 +325,13 @@ module Camping
                 custom_action ? send(custom_action, id || @input[:id]) : read(id || @input[:id])
               end
             rescue NoMethodError => e
-              # FIXME: we're treading NoMethodErrors are routing errors, but this is not necessarily the case!
-              return no_method(e)
+              # FIXME: this is probably not a good way to do this, but we need to somehow differentiate
+              #        between 'no such route' vs. other NoMethodErrors
+              if e.message =~ /no such method/
+                return no_method(e)
+              else
+                raise e
+              end
             rescue ActiveRecord::RecordNotFound => e
               return not_found(e)
             end
@@ -332,24 +340,25 @@ module Camping
           
           def post(custom_action = nil) # :nodoc:
             @format = Controllers.read_format(@input, @env)
-            puts @env.inspect
             custom_action ? send(custom_action) : create
           end
           
           
-          def put(id = nil, custom_action = nil) # :nodoc:
+          def put(id, custom_action = nil) # :nodoc:
+            id = id.to_i if id =~ /^[0-9]+$/
             @format = Controllers.read_format(@input, @env)
             custom_action ? send(custom_action, id || @input[:id]) : update(id || @input[:id])
           end
           
           
-          def delete(id = nil, custom_action = nil) # :nodoc:
+          def delete(id, custom_action = nil) # :nodoc:
+            id = id.to_i if id =~ /^[0-9]+$/
             @format = Controllers.read_format(@input, @env)
             custom_action ? send(custom_action, id || @input[:id]) : destroy(id || @input[:id])
           end
           
           private
-          def _error(message, status_code, e)
+          def _error(message, status_code, e = nil)
             @status = status_code
             @message = message
             begin
@@ -358,8 +367,9 @@ module Camping
               if @format.to_s == 'XML'
                 "<error code='#{status_code}'>#{@message}</error>"
               else
-                "<strong>#{@message}</strong>" +
-                "<pre style='color: #bbb'><strong>#{e.class}: #{e}</strong>\n#{e.backtrace.join("\n")}</pre>"
+                out  = "<strong>#{@message}</strong>"
+                out += "<pre style='color: #bbb'><strong>#{e.class}: #{e}</strong>\n#{e.backtrace.join("\n")}</pre>" if e
+                out
               end
             end
           end
