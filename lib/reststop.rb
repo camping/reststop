@@ -191,10 +191,10 @@ module Camping
       begin
         ct = mod::CONTENT_TYPE
       rescue NameError
-        ct = 'text/html'
+        ct = "text/#{format.to_s.downcase}"
       end
       @headers['Content-Type'] = ct
-    
+      
       s = m.capture{m.send(action)}
       s = m.capture{send(:layout){s}} if /^_/!~a[0].to_s and m.respond_to?(:layout)
       s

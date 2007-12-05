@@ -1,4 +1,5 @@
 require 'net/http'
+require 'net/https'
 require 'uri'
 require 'cgi'
 
@@ -51,12 +52,12 @@ class Restr
       
     method_mod = method.to_s.downcase.capitalize
     unless Net::HTTP.const_defined?(method_mod)
-      raise InvalidMethodError, 
+      raise InvalidRequestMethod, 
         "Callback method #{method.inspect} is not a valid HTTP request method."
     end
     
     if method_mod == 'Get'
-      q = params.collect{|k,v| "#{CGI.escape(k)}=#{CGI.escape(v)}"}.join("&")
+      q = params.collect{|k,v| "#{CGI.escape(k.to_s)}=#{CGI.escape(v.to_s)}"}.join("&")
       if uri.query
         uri.query += "&#{q}"
       else
@@ -99,6 +100,6 @@ class Restr
     end
   end
   
-  class InvalidMethodError < Exception
+  class InvalidRequestMethod < Exception
   end
 end
