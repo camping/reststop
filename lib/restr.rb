@@ -30,9 +30,10 @@ end
 #   # Retrieve a list of Kittens
 #   kittens = Restr.get('http://example.com/kittens.xml')
 #
-# The Restr request methods return an XmlSimple object 
-# (see http://xml-simple.rubyforge.org/) when the response has the 'text/xml' 
-#  content type. Otherwise the response is returned as a plain String.
+# When the response to a Restr request has content type 'text/xml', the
+# response body will be parsed from XML into a nested Hash (using XmlSimple 
+# -- see http://xml-simple.rubyforge.org/). Otherwise the response is  
+# returned untouched, as a String.
 #
 # If the remote REST resource requires authentication (Restr only supports
 # HTTP Basic authentication, for now):
@@ -65,6 +66,7 @@ class Restr
     
     req = Net::HTTP.const_get(method_mod).new(uri.request_uri)
     
+    
     if auth
       raise ArgumentError, 
         "The `auth` parameter must be a Hash with a :username and :password value." unless 
@@ -75,9 +77,10 @@ class Restr
     unless method_mod == 'Get'
       req.set_form_data(params, ';')
     end
-    
-    
-    res = Net::HTTP.new(uri.host, uri.port).start do |http|
+ 
+    client = Net::HTTP.new(uri.host, uri.port)
+    client.use_ssl = (uri.scheme == 'https')
+    res = client.start do |http|
       http.request(req)
     end
     
@@ -86,9 +89,7 @@ class Restr
       if res.content_type == 'text/xml'
         XmlSimple.xml_in_string(res.body,
           'forcearray'   => false,
-          'forcecontent' => true,
-          'keeproot'     => true,
-          'contentkey'   => '__content__'
+          'keeproot'     => true
         )
       else
         res.body
