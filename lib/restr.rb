@@ -8,7 +8,11 @@ begin
 rescue LoadError
   require 'rubygems'
   require 'active_support'
+  begin
   require 'xml_simple'
+  rescue LoadError
+    require 'xmlsimple'
+  end
 end
 
 
@@ -45,6 +49,13 @@ end
 #     {:username => 'foo', :password => 'bar'})
 #
 class Restr
+  @@log = nil
+  
+  def self.logger=(logger)
+    @@log = logger
+    @@log.progname = self.name
+  end
+  
   def self.method_missing(method, *args)
     self.do(method, args[0], args[1] || {}, args[2])
   end
@@ -75,12 +86,15 @@ class Restr
       raise ArgumentError, 
         "The `auth` parameter must be a Hash with a :username and :password value." unless 
         auth.kind_of? Hash
-      req.basic_auth auth[:username], auth[:password]
+      req.basic_auth auth[:username] || auth['username'], auth[:password] || auth['password']
     end
     
     unless method_mod == 'Get'
       req.set_form_data(params, ';')
     end
+    
+    @@log.debug("Sending #{method.inspect} request to #{url.inspect} with data #{params.inspect}"+
+        (auth ? " with authentication" : "")+".") if @@log
  
     client = Net::HTTP.new(uri.host, uri.port)
     client.use_ssl = (uri.scheme == 'https')
@@ -91,15 +105,18 @@ class Restr
     case res
     when Net::HTTPSuccess
       if res.content_type == 'text/xml'
+        @@log.debug("Got XML response.") if @@log
         return XmlSimple.xml_in_string(res.body,
           'forcearray'   => false,
           'keeproot'     => false
         )
       else
+        @@log.debug("Got #{res.content_type.inspect} response.") if @@log
         return res.body
       end
     else
       $LAST_ERROR_BODY = res.body # FIXME: this is dumb
+      @@log.error("Got error resposne '#{res.message}(#{res.code})': #{$LAST_ERROR_BODY}") if @@log
       res.error!      
     end
   end
