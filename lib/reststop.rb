@@ -16,17 +16,6 @@
 # <http://www.gnu.org/licenses/>.
 #--
 
-
-module Reststop
-	module VERSION #:nodoc:
-    MAJOR = 0
-    MINOR = 2
-    TINY  = 0
-
-    STRING = [MAJOR, MINOR, TINY].join('.')
-  end
-end
-
 # Extends and overrides Camping for convenient RESTfulness.
 #
 # Have a look at:
@@ -35,7 +24,6 @@ end
 # * Camping#render for help on grouping your views by output format
 #
 module Camping
-  
   
   # Override Camping's goes() mechanism so that we can add our stuff.
   # ... there must be a saner way to do this >:|
