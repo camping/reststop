@@ -1,9 +1,11 @@
-Rakefile
-README.txt
 CHANGELOG.txt
 LICENSE.txt
 Manifest.txt
-setup.rb
+README.txt
+Rakefile
+lib/restr.rb
 lib/reststop.rb
-test/test_helper.rb
+lib/reststop/version.rb
+setup.rb
 test/reststop_test.rb
+test/test_helper.rb
