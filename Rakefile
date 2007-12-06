@@ -9,7 +9,7 @@ require 'rake/contrib/rubyforgepublisher'
 require 'fileutils'
 require 'hoe'
 include FileUtils
-require File.join(File.dirname(__FILE__), 'lib', 'reststop')
+require File.join(File.dirname(__FILE__), 'lib', 'reststop', 'version')
 
 AUTHOR = "Matt Zukowski"  # can also be an array of Authors
 EMAIL = "matt@roughest.net"

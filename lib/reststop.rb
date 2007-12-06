@@ -34,7 +34,8 @@ module Camping
   #        server for launching apps :(
   S2 = IO.read(__FILE__).gsub(/^  S2 = I.+$/,'') # :nodoc:
   class << self
-    alias_method :camping_goes, :goes 
+    # alias_method call is conditional only to make `rake package` happy
+    alias_method :camping_goes, :goes if methods.include? :goes
     def goes(m) # :nodoc:
       camping_goes m
       eval S2.gsub('Camping', m.to_s), TOPLEVEL_BINDING
