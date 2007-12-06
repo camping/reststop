@@ -218,7 +218,7 @@ module Camping
     
     class << self
       def read_format(input, env) #:nodoc:
-        if input[:format]
+        if input[:format] && !input[:format].empty?
           input[:format].upcase.intern
         elsif env['PATH_INFO'] =~ /\.([a-z]+)$/
           $~[1].upcase.intern
