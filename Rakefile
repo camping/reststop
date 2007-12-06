@@ -20,7 +20,8 @@ HOMEPATH = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 
 
 NAME = "reststop"
-REV = nil # UNCOMMENT IF REQUIRED: File.read(".svn/entries")[/committed-rev="(d+)"/, 1] rescue nil
+#REV = nil
+REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
 VERS = ENV['VERSION'] || (Reststop::VERSION::STRING + (REV ? ".#{REV}" : ""))
                           CLEAN.include ['**/.*.sw?', '*.gem', '.config']
 RDOC_OPTS = ['--quiet', '--title', "reststop #{VERS} documentation",
