@@ -350,7 +350,7 @@ module Camping
           end
           
           private
-          def _error(message, status_code, e = nil)
+          def _error(message, status_code = 500, e = nil)
             @status = status_code
             @message = message
             begin
