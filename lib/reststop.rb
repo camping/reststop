@@ -28,8 +28,8 @@ require 'reststop/version'
 #
 module Camping
   
-  # Override Camping's goes() mechanism so that we can add our stuff.
-  # ... there must be a saner way to do this >:|
+  # Overrides Camping's goes() mechanism so that we can add our stuff.
+  # ... there must be a saner way to do this? >:|
   #
   # Also modifies Camping's qsp() method to allow parsing of XML input data.
   #
@@ -45,7 +45,7 @@ module Camping
     end
   end
 
-  # Override Camping's query parsing method so that XML input is parsed
+  # Overrides Camping's query parsing method so that XML input is parsed
   # into @input as an object usable more or less in the same manner as
   # a standard Hash input. 
   #

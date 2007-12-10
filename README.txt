@@ -24,7 +24,7 @@ Reststop essentially gives you three things:
 * destroy (DELETE)
 * list (GET)
 
-See the Camping::Controllers#REST method documentation for usage info.
+Custom actions are also possible. See the Camping::Controllers#REST method documentation for usage info.
 
 <b>2. Camping views grouped by output format:</b>
 
@@ -51,7 +51,7 @@ Your render call:
 
   render(:foo, :XML)
   
-See the render() method documentation for usage info.
+See the Camping#render method documentation for usage info.
 
 <b>3. Nice URLs to bring it all together:</b>
 
@@ -64,6 +64,25 @@ That is, say you have a "kittens" resource; you can make a GET
 request to http://yourapp.com/kittens.xml and get a list of kittens
 through your Kittens controller's <tt>list</tt>, formatted using your
 <tt>XML</tt> view module.
+
+
+<b>BONUS: A simple REST client</b>
+
+Reststop also comes with a very simple REST client called Restr.
+Restr is basically a wrapper around Ruby's Net::HTTP, offering
+a more RESTfully meaningful interface.
+
+See the Restr documentation for more info, but here's a simple
+example of RESTful interaction with Restr:
+
+  require 'restr'
+  kitten = Restr.get('http://example.com/kittens/1.xml')
+  puts kitten['name']
+  puts kitten['colour']
+  
+  kitten['colour'] = 'black'
+  kitten = Restr.put('http://example.com/kittens/1.xml', kitten)
+
 
 ----
 
