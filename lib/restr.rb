@@ -52,7 +52,7 @@ class Restr
   @@log = nil
   
   def self.logger=(logger)
-    @@log = logger
+    @@log = logger.dup
     @@log.progname = self.name
   end
   
