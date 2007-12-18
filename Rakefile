@@ -24,7 +24,7 @@ REV = nil
 #REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
 VERS = ENV['VERSION'] || (Reststop::VERSION::STRING + (REV ? ".#{REV}" : ""))
                           CLEAN.include ['**/.*.sw?', '*.gem', '.config']
-RDOC_OPTS = ['--quiet', '--title', "reststop #{VERS} documentation",
+RDOC_OPTS = ['--quiet', '--title', "#{NAME} #{VERS} documentation",
     "--opname", "index.html",
     "--line-numbers", 
     "--main", "README",

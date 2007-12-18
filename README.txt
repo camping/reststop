@@ -14,6 +14,9 @@ You can contact the author at:
 <b>Reststop makes it easy to write RESTful[http://en.wikipedia.org/wiki/Representational_State_Transfer] 
 applications in Camping[http://camping.rubyforge.org/files/README.html].</b>
 
+For an example of a complete Reststop-based Camping app, have a look at 
+http://reststop.rubyforge.org/svn/trunk/examples/blog.rb
+
 Reststop essentially gives you three things:
 
 <b>1. Camping controllers that respond to the standard REST verbs:</b>
@@ -55,15 +58,26 @@ See the Camping#render method documentation for usage info.
 
 <b>3. Nice URLs to bring it all together:</b>
 
-For example:
+For example a list of kittens in the default format (HTML) is available at:
 
-GET /kittens.rss
-GET /kittens/1.xml
+  /kittens
 
-That is, say you have a "kittens" resource; you can make a GET
+The list, in RSS format:
+
+  /kittens.rss
+  
+Kitten with id 1, in XML format:
+  
+  /kittens/1.xml
+  
+Using custom action 'meow' on kitten with id 1:
+
+  /kittens/1/meow
+
+In other words, say you have a "kittens" resource; you can make a GET
 request to http://yourapp.com/kittens.xml and get a list of kittens
 through your Kittens controller's <tt>list</tt>, formatted using your
-<tt>XML</tt> view module.
+<tt>XML</tt> view module. 
 
 
 <b>BONUS: A simple REST client</b>
