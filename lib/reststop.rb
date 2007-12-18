@@ -213,9 +213,7 @@ module Camping
     end
   end
   
-  module Controllers
-    
-    
+  module Controllers 
     class << self
       def read_format(input, env) #:nodoc:
         if input[:format] && !input[:format].empty?
@@ -290,7 +288,9 @@ module Camping
           "#{options[:prefix]}/#{r}/([0-9a-zA-Z]+)(?:\.[a-z]+)?",
           "#{options[:prefix]}/#{r}/([a-z_]+)(?:\.[a-z]+)?",
           "#{options[:prefix]}/#{r}(?:\.[a-z]+)?"
+          
         crud.module_eval do
+          meta_def(:restful?){true}
           
           $LOG.debug("Creating RESTful controller for #{r.inspect} using Reststop #{::Reststop::VERSION::STRING}") if $LOG
           
@@ -378,6 +378,32 @@ module Camping
       end
     end
   end
+
+  module Helpers
+    alias_method :_R, :R
+    def R(c, *g)
+      if c.respond_to?(:restful?) && c.restful?
+        base = c.name.split("::").last.underscore
+        id = g.shift
+        action = g.shift
+        path = "/#{base}"
+        path << "/#{id}" if id
+        path << "/#{action}" if action
+        path << ".#{@format.to_s.downcase}" if @format 
+        path << "?#{g}" unless g.empty? # FIXME: undefined behaviour if there are multiple arguments left
+        self / path
+      elsif c.respond_to?(:id) && 
+          Controllers.constants.include?(cl = c.class.name.split("::").last.pluralize)
+        path = "/#{cl.underscore}/#{c.id}"
+        path << ".#{@format.to_s.downcase}" if @format
+        path << "?#{g}" unless g.empty? # FIXME: undefined behaviour if there are multiple arguments left
+        self / path
+      else
+        _R(c, *g)
+      end
+    end
+  end
+
 end
 
 module Markaby
