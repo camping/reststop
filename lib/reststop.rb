@@ -392,10 +392,10 @@ module Camping
     #   R(@kitten)            # /kittens/1
     #   R(@kitten, 'meow')    # /kittens/1/meow
     #
-    # The current @format is retained, so if the current @format is :XML, the URL
-    # will be /kittens/1.xml rather than /kittens/1.
+    # The current output format is retained, so if the current <tt>@format</tt> is <tt>:XML</tt>, 
+    # the URL will be /kittens/1.xml rather than /kittens/1.
     #
-    # Note that your controller names might not be loaded if you're calling R inside a
+    # Note that your controller names might not be loaded if you're calling <tt>R</tt> inside a
     # view module. In that case you should use the fully qualified name (i.e. Myapp::Controllers::Kittens)
     # or include the Controllers module into your view module. 
     def R(c, *g)
