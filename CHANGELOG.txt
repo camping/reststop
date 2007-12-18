@@ -17,6 +17,7 @@
   * Pages now correctly return HTTP status code 501 when an unimplemented controller 
     method is called. ActiveRecord::NotFound exceptions are caught and return 404 
     status.
+  * R helper now works for routing RESTful controllers.
 
 === 0.1.0 :: 2007-07-30
 
