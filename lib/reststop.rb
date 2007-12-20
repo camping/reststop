@@ -100,12 +100,12 @@ module Camping
   # The format can also be specified in other ways (shown in this order 
   # of precedence):
   #
-  #   # By providing a second parameter to render()
-  #     (eg: <tt>render(:foo, :HTML)</tt>)
-  #   # By setting the @format variable
-  #   # By providing a 'format' parameter in the request (i.e. @input[:format])
-  #   # By adding a file-format extension to the url (e.g. /items.xml or 
-  #     /items/2.html).
+  # 1. By providing a second parameter to render()
+  #    (eg: <tt>render(:foo, :HTML)</tt>)
+  # 2. By setting the @format variable
+  # 3. By providing a 'format' parameter in the request (i.e. @input[:format])
+  # 4. By adding a file-format extension to the url (e.g. /items.xml or 
+  #    /items/2.html).
   #
   # For example, you could have:
   #

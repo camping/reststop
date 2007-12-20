@@ -1,18 +1,15 @@
 = Reststop
 
-<i>Copyright 2007 Urbacon Ltd.</i>
-
-For info and downloads please see:
-
-  http://rubyforge.org/projects/reststop/
-
-You can contact the author at:
-
-  matt at roughest dot net
-  
-
 <b>Reststop makes it easy to write RESTful[http://en.wikipedia.org/wiki/Representational_State_Transfer] 
 applications in Camping[http://camping.rubyforge.org/files/README.html].</b>
+
+For info and downloads please see http://rubyforge.org/projects/reststop
+
+
+*Author*::    Matt Zukowski (matt at roughest dot net)
+*Copyright*:: Copyright (c) 2007 Urbacon Ltd.
+*License*::   GNU Lesser General Public License Version 3
+
 
 For an example of a complete Reststop-based Camping app, have a look at 
 http://reststop.rubyforge.org/svn/trunk/examples/blog.rb
