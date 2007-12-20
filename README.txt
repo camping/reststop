@@ -95,7 +95,7 @@ example of RESTful interaction with Restr:
   kitten = Restr.put('http://example.com/kittens/1.xml', kitten)
 
 
-----
+== License
 
 Reststop is free software; you can redistribute it and/or modify
 it under the terms of the GNU Lesser General Public License as published 
