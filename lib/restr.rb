@@ -115,8 +115,8 @@ class Restr
         return res.body
       end
     else
-      $LAST_ERROR_BODY = res.body # FIXME: this is dumb
-      @@log.error("Got error resposne '#{res.message}(#{res.code})': #{$LAST_ERROR_BODY}") if @@log
+      $LAST_ERROR_BODY = res.body # FIXME: this is dumb... need a better way of reporting errors
+      @@log.error("Got error response '#{res.message}(#{res.code})': #{$LAST_ERROR_BODY}") if @@log
       res.error!      
     end
   end
