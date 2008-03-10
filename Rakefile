@@ -18,6 +18,7 @@ GEM_NAME = "reststop"
 RUBYFORGE_PROJECT = "reststop" # The unix name for your project
 HOMEPATH = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 
+ENV['NODOT'] = '1'
 
 NAME = "reststop"
 #REV = nil
