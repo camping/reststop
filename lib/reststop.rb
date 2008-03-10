@@ -414,7 +414,8 @@ module Camping
       if Controllers.constants.include?(cl = c.class.name.split("::").last.pluralize)
         path = "/#{cl.underscore}/#{c.id}"
         path << ".#{@format.to_s.downcase}" if @format
-        path << "?#{g}" unless g.empty? # FIXME: undefined behaviour if there are multiple arguments left
+        path << "/#{g.shift}" unless g.empty? 
+        # FIXME: undefined behaviour if there are multiple arguments left... maybe we should allow for arbitrary params as a Hash?
         self / path
       elsif c.respond_to?(:restful?) && c.restful?
         base = c.name.split("::").last.underscore
