@@ -90,7 +90,7 @@ class Restr
     end
     
     unless method_mod == 'Get'
-      req.set_form_data(params, ';')
+      req.set_form_data(params, '&')
     end
     
     @@log.debug("Sending #{method.inspect} request to #{url.inspect} with data #{params.inspect}"+
