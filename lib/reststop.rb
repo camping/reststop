@@ -237,8 +237,8 @@ module Camping
       # * list
       # 
       # Routes will be automatically created based on the resource name fed to the
-      # REST method. Note that your class must have the same (but CamelCaps'ed) 
-      # name as the resource name. So if your resource name is 'kittens', 
+      # REST method. <b>Your class must have the same (but CamelCaps'ed) 
+      # name as the resource name.</b> So if your resource name is 'kittens', 
       # your controller class must be Kittens.
       #
       # For example:
@@ -268,10 +268,10 @@ module Camping
       #   end
       #
       #
-      # Optionally, you can specify a :prefix key that will prepend this
-      # string to the routes. For example, this will create all of the above
-      # routes, prefixed with '/pets' (i.e. POST '/pets/kittens', 
-      # GET '/pets/kittens/(\d+)', etc.)
+      # Optionally, you can specify a <tt>:prefix</tt> key that will prepend the
+      # given string to the routes. For example, the following will create all of 
+      # the above routes, prefixed with "/pets" (i.e. <tt>POST '/pets/kittens'</tt>, 
+      # <tt>GET '/pets/kittens/(\d+)'</tt>, etc.):
       #
       #   module Foobar::Controllers
       #     class Items < REST 'kittens', :prefix => '/pets'
@@ -279,8 +279,9 @@ module Camping
       #     end
       #   end
       #
-      # Additionally, format-based routing is possible. For example to get 
-      # a list of kittens in XML format, place a GET call to /kittens.xml.
+      # Format-based routing similar to that in ActiveResource is also implemented. 
+      # For example, to get a list of kittens in XML format, place a 
+      # <tt>GET</tt> call to <tt>/kittens.xml</tt>.
       # See the documentation for the render() method for more info.
       #
       def REST(r, options = {})
