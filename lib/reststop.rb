@@ -267,11 +267,22 @@ module Camping
       #     end
       #   end
       #
+      # Custom actions are also possible. For example, to implement a 'meow' 
+      # action simply add a 'meow' method to the above controller:
+      #
+      #   # POST/GET/PUT/DELETE /kittens/meow
+      #   # POST/GET/PUT/DELETE /kittens/(\d+)/meow
+      #   def meow(id)
+      #   end
+      #
+      # Note that a custom action will respond to all four HTTP methods 
+      # (POST/GET/PUT/DELETE).
       #
       # Optionally, you can specify a <tt>:prefix</tt> key that will prepend the
-      # given string to the routes. For example, the following will create all of 
-      # the above routes, prefixed with "/pets" (i.e. <tt>POST '/pets/kittens'</tt>, 
-      # <tt>GET '/pets/kittens/(\d+)'</tt>, etc.):
+      # given string to the routes. For example, the following will create all 
+      # of the above routes, prefixed with "/pets" 
+      # (i.e. <tt>POST '/pets/kittens'</tt>,  <tt>GET '/pets/kittens/(\d+)'</tt>, 
+      # etc.):
       #
       #   module Foobar::Controllers
       #     class Items < REST 'kittens', :prefix => '/pets'
