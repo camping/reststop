@@ -53,7 +53,8 @@ class Restr
   
   def self.logger=(logger)
     @@log = logger.dup
-    @@log.progname = self.name
+    # ActiveSupport's BufferedLogger doesn't seem to support progname= :(
+    @@log.progname = self.name if @@log.respond_to?(:progname)
   end
   
   def self.method_missing(method, *args)
