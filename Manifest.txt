@@ -1,3 +1,5 @@
+.loadpath
+.project
 CHANGELOG.txt
 History.txt
 LICENSE.txt
@@ -5,7 +7,6 @@ Manifest.txt
 README.txt
 Rakefile
 examples/blog.rb
-lib/restr.rb
 lib/reststop.rb
 lib/reststop/version.rb
 setup.rb

@@ -51,6 +51,6 @@ hoe = Hoe.new(GEM_NAME, VERS) do |p|
   
   # == Optional
   #p.changes        - A description of the release's latest changes.
-  #p.extra_deps     - An array of rubygem dependencies.
+  p.extra_deps = ['restr']
   #p.spec_extras    - A hash of extra values to set in the gemspec.
 end

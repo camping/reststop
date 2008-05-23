@@ -1,7 +1,8 @@
-=== 0.2.1 :: In Progress...
+=== 0.3.0 :: In Progress...
 
-  * Restr should now work properly with Rails 2.x (fixes bug #17421).
-  * R helper method should now work properly when a Restful object is fed as
+  * Restr has been moved out to its own gem, and should now work properly with 
+    Rails 2.x (fixes bug #17421).
+  * `R` helper method should now work properly when a Restful object is fed as
     input along with a custom action.
 
 === 0.2.0 :: 2007-12-10
