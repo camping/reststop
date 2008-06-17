@@ -403,6 +403,7 @@ module Camping
     #   R(Kittens, 1, 'meow') # /kittens/1/meow
     #   R(@kitten)            # /kittens/1
     #   R(@kitten, 'meow')    # /kittens/1/meow
+    #   R(Kittens, 'list', :colour => 'black')  # /kittens/list?colour=black
     #
     # The current output format is retained, so if the current <tt>@format</tt> is <tt>:XML</tt>, 
     # the URL will be /kittens/1.xml rather than /kittens/1.
@@ -415,17 +416,21 @@ module Camping
         path = "/#{cl.underscore}/#{c.id}"
         path << ".#{@format.to_s.downcase}" if @format
         path << "/#{g.shift}" unless g.empty? 
-        # FIXME: undefined behaviour if there are multiple arguments left... maybe we should allow for arbitrary params as a Hash?
         self / path
       elsif c.respond_to?(:restful?) && c.restful?
         base = c.name.split("::").last.underscore
-        id = g.shift
-        action = g.shift
+        id_or_action = g.shift
+        if id_or_action =~ /\d+/
+          id = id_or_action
+          action = g.shift
+        else
+          action = id_or_action
+        end
         path = "/#{base}"
         path << "/#{id}" if id
         path << "/#{action}" if action
         path << ".#{@format.to_s.downcase}" if @format 
-        path << "?#{g}" unless g.empty? # FIXME: undefined behaviour if there are multiple arguments left
+        path << "?#{g.collect{|a|a.collect{|k,v| C.escape(k)+"="+C.escape(v)}.join("&")}.join("&")}" unless g.empty? # FIXME: undefined behaviour if there are multiple arguments left
         self / path
       else
         _R(c, *g)
