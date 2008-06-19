@@ -77,14 +77,19 @@ through your Kittens controller's <tt>list</tt>, formatted using your
 <tt>XML</tt> view module. 
 
 
-<b>BONUS: A simple REST client</b>
+<b>Looking for Restr, the very simple REST client?</b>
 
-Reststop also comes with a very simple REST client called Restr.
+Due to its popularity, <b>Restr</b>, the "very simple rest client",
+has been moved out to its own gem. Restr now lives under
+http://rubyforge.org/projects/restr/ and can be installed using:
+
+  gem install restr
+ 
 Restr is basically a wrapper around Ruby's Net::HTTP, offering
 a more RESTfully meaningful interface.
 
-See the Restr documentation for more info, but here's a simple
-example of RESTful interaction with Restr:
+See the "Restr documentation"[http://restr.rubyforge.org/] for more info, 
+but here's a simple example of RESTful interaction with Restr:
 
   require 'restr'
   kitten = Restr.get('http://example.com/kittens/1.xml')

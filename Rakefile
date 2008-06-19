@@ -21,8 +21,8 @@ HOMEPATH = "http://#{RUBYFORGE_PROJECT}.rubyforge.org"
 ENV['NODOT'] = '1'
 
 NAME = "reststop"
-#REV = nil
-REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
+REV = nil
+#REV = `svn info`[/Revision: (\d+)/, 1] rescue nil
 VERS = ENV['VERSION'] || (Reststop::VERSION::STRING + (REV ? ".#{REV}" : ""))
                           CLEAN.include ['**/.*.sw?', '*.gem', '.config']
 RDOC_OPTS = ['--quiet', '--title', "#{NAME} #{VERS} documentation",

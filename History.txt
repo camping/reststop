@@ -1,10 +1,10 @@
-=== 0.3.0 :: In Progress...
+=== 0.3.0 :: 2008-06-19
 
   * Restr has been moved out to its own gem, and should now work properly with 
     Rails 2.x (fixes bug #17421).
-  * `R` helper method should now work properly when a Restful object is fed as
-    input along with a custom action. The final argument can be a Hash and 
-    will be translated into URL parameters. For example: 
+  * `R` helper method should now work properly when a Restful controlelr class 
+    is fed as input along with a custom action. The final argument can be a Hash 
+    and will be translated into URL parameters. For example: 
       R(Kittens, 'list', 'colour' => 'black') 
 
 === 0.2.0 :: 2007-12-10
