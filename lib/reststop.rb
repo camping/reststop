@@ -87,8 +87,8 @@ module Camping
   # parameter must be 'post' (i.e. :method => post).
   #
   def service(*a)
-    if @method == 'post' && (input._method == 'put' || input._method == 'delete')
-      @env['REQUEST_METHOD'] = input._method.upcase
+    if @env.REQUEST_METHOD == 'post' && (input._method == 'put' || input._method == 'delete')
+      @env.REQUEST_METHOD = input._method.upcase
       @method = input._method
     end
     super(*a)
@@ -426,12 +426,13 @@ module Camping
         else
           action = id_or_action
         end
+        
         path = "/#{base}"
         path << "/#{id}" if id
         path << "/#{action}" if action
         path << ".#{@format.to_s.downcase}" if @format 
-        path << "?#{g.collect{|a|a.collect{|k,v| C.escape(k)+"="+C.escape(v)}.join("&")}.join("&")}" unless g.empty? # FIXME: undefined behaviour if there are multiple arguments left
-        self / path
+        path << "?#{g.collect{|a|a.collect{|k,v| U.escape(k)+"="+U.escape(v)}.join("&")}.join("&")}" unless g.empty? # FIXME: undefined behaviour if there are multiple arguments left
+        return path
       else
         _R(c, *g)
       end

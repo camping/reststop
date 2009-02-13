@@ -4,4 +4,6 @@
 	<pathentry path="org.rubypeople.rdt.launching.RUBY_CONTAINER" type="con"/>
 	<pathentry path="GEM_LIB/reststop-0.2.0.50/lib" type="var"/>
 	<pathentry path="GEM_LIB/reststop-0.2.0.50/lib" type="var"/>
+	<pathentry path="GEM_LIB/camping-1.5/lib" type="var"/>
+	<pathentry path="GEM_LIB/camping-1.5/lib" type="var"/>
 </loadpath>

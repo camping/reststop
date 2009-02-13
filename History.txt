@@ -1,3 +1,7 @@
+=== In Progress...
+
+  * Now compatible with Camping 2.0, but no longer works with Camping 1.x :(
+
 === 0.3.0 :: 2008-06-19
 
   * Restr has been moved out to its own gem, and should now work properly with 
