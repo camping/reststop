@@ -87,10 +87,12 @@ module Camping
   # parameter must be 'post' (i.e. :method => post).
   #
   def service(*a)
-    if @env.REQUEST_METHOD == 'post' && (input._method == 'put' || input._method == 'delete')
+    
+    if @env.REQUEST_METHOD == 'POST' && (input['_method'] == 'put' || input['_method'] == 'delete')
       @env.REQUEST_METHOD = input._method.upcase
       @method = input._method
     end
+    
     super(*a)
   end
   
