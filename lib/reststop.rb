@@ -105,7 +105,7 @@ module Camping
   # 1. By providing a second parameter to render()
   #    (eg: <tt>render(:foo, :HTML)</tt>)
   # 2. By setting the @format variable
-  # 3. By providing a 'format' parameter in the request (i.e. @input[:format])
+  # 3. By providing a 'format' parameter in the request (i.e. input[:format])
   # 4. By adding a file-format extension to the url (e.g. /items.xml or 
   #    /items/2.html).
   #
@@ -309,9 +309,9 @@ module Camping
           $LOG.debug("Creating RESTful controller for #{r.inspect} using Reststop #{::Reststop::VERSION::STRING}") if $LOG
           
           def get(id_or_custom_action = nil, custom_action =  nil) # :nodoc:
-            id = @input[:id] if @input[:id]
+            id = input['id'] if input['id']
             
-            custom_action = @input[:action] if @input[:action]
+            custom_action = input['action'] if input['action']
             
             if self.methods.include? id_or_custom_action
               custom_action ||= id_or_custom_action
@@ -322,13 +322,13 @@ module Camping
             
             id = id.to_i if id && id =~ /^[0-9]+$/
             
-            @format = Controllers.read_format(@input, @env)
+            @format = Controllers.read_format(input, @env)
             
             begin
-              if id.nil? && @input[:id].nil?
+              if id.nil? && input['id'].nil?
                 custom_action ? send(custom_action) : list
               else
-                custom_action ? send(custom_action, id || @input[:id]) : read(id || @input[:id])
+                custom_action ? send(custom_action, id || input['id']) : read(id || input['id'])
               end
             rescue NoMethodError => e
               # FIXME: this is probably not a good way to do this, but we need to somehow differentiate
@@ -345,22 +345,22 @@ module Camping
           
           
           def post(custom_action = nil) # :nodoc:
-            @format = Controllers.read_format(@input, @env)
+            @format = Controllers.read_format(input, @env)
             custom_action ? send(custom_action) : create
           end
           
           
           def put(id, custom_action = nil) # :nodoc:
             id = id.to_i if id =~ /^[0-9]+$/
-            @format = Controllers.read_format(@input, @env)
-            custom_action ? send(custom_action, id || @input[:id]) : update(id || @input[:id])
+            @format = Controllers.read_format(input, @env)
+            custom_action ? send(custom_action, id || input['id']) : update(id || input['id'])
           end
           
           
           def delete(id, custom_action = nil) # :nodoc:
             id = id.to_i if id =~ /^[0-9]+$/
-            @format = Controllers.read_format(@input, @env)
-            custom_action ? send(custom_action, id || @input[:id]) : destroy(id || @input[:id])
+            @format = Controllers.read_format(input, @env)
+            custom_action ? send(custom_action, id || input['id']) : destroy(id || input['id'])
           end
           
           private

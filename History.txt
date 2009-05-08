@@ -1,4 +1,9 @@
-=== 0.4.0 :: In Progress...
+=== 0.4.1 :: 2009-05-08
+
+  * Custom actions should now work again (needed to make some more changes for
+    Camping 2.0 compatibility).
+
+=== 0.4.0 :: 2009-05-01
 
   * Now compatible with Camping 2.0, but no longer works with Camping 1.x :(
 
