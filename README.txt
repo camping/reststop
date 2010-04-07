@@ -1,18 +1,18 @@
 = Reststop
 
 <b>Reststop makes it easy to write RESTful[http://en.wikipedia.org/wiki/Representational_State_Transfer] 
-applications in Camping[http://camping.rubyforge.org/files/README.html].</b>
+applications in Camping[http://github.com/camping/camping].</b>
 
-For info and downloads please see http://rubyforge.org/projects/reststop
+For info and downloads please see http://github.com/zuk/reststop
 
 
-*Author*::    Matt Zukowski (matt at roughest dot net)
-*Copyright*:: Copyright (c) 2007 Urbacon Ltd.
-*License*::   GNU Lesser General Public License Version 3
+*Authors*::    Matt Zukowski and Philippe Monnet (see http://github.com/zuk/reststop/commits/master)
+*Copyright*:: Copyright (c) 2010 Urbacon Ltd.
+*License*::   MIT License[http://en.wikipedia.org/wiki/MIT_License]
 
 
 For an example of a complete Reststop-based Camping app, have a look at 
-http://reststop.rubyforge.org/svn/trunk/examples/blog.rb
+http://github.com/zuk/reststop/blob/master/examples/blog.rb
 
 Reststop essentially gives you three things:
 
@@ -24,7 +24,7 @@ Reststop essentially gives you three things:
 * destroy (DELETE)
 * list (GET)
 
-Custom actions are also possible. See the Camping::Controllers#REST method documentation for usage info.
+Custom actions are also possible. See the Reststop::Controllers#REST method documentation for usage info.
 
 <b>2. Camping views grouped by output format:</b>
 
@@ -102,15 +102,25 @@ but here's a simple example of RESTful interaction with Restr:
 
 == License
 
-Reststop is free software; you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as published 
-by the Free Software Foundation; either version 3 of the License, or
-(at your option) any later version.
+Copyright (c) 2010 the Contributors (see http://github.com/zuk/reststop/commits/master)
 
-Reststop is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated documentation
+ files (the "Software"), to deal in the Software without
+ restriction, including without limitation the rights to use,
+ copy, modify, merge, publish, distribute, sublicense, and/or sell
+ copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following
+ conditions:
 
-You should have received a copy of the GNU Lesser General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ The above copyright notice and this permission notice shall be
+ included in all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+ OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.

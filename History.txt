@@ -1,3 +1,8 @@
+=== 0.5.0 :: 2010-04-07
+
+  * Major refactoring for compatibility with Camping 2.0. Thanks to Philippe Monnet
+    for completing the work.
+
 === 0.4.1 :: 2009-05-08
 
   * Custom actions should now work again (needed to make some more changes for

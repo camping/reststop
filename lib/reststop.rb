@@ -1,401 +1,182 @@
-require 'camping'
-require 'reststop/version'
+# Right now you'll have to do some weird gymnastics to get this hooked in to a Camping app...
+# Something like:
+#
+#   Camping.goes :Blog
+# 
+#   module Blog
+#     include Camping::Session
+#     include Reststop
+#  
+#     Controllers.extend Reststop::Controllers
+#   end
+# 
+#   module Blog::Base
+#     alias camping_render render
+#     alias camping_service service
+#     include Reststop::Base
+#     alias service reststop_service
+#     alias render reststop_render
+#   end
+#   
+#   module Blog::Controllers
+#     extend Reststop::Controllers
+#     ...
+#   end
+#   
+#   module Blog::Helpers
+#     alias_method :_R, :R
+#     remove_method :R
+#     include Reststop::Helpers
+#     ...
+#   end
+#   
+#   module Blog::Views
+#     extend Reststop::Views
+#     ...
+#   end
+#
+# The hope is that this could all get taken care of in a
+# `include Reststop` call (via overriding of #extended)
+#
+# See examples/blog.rb for a working example.
 
-#--
-# This file is part of Reststop.
-#
-# Reststop is free software; you can redistribute it and/or modify
-# it under the terms of the GNU Lesser General Public License as 
-# published by the Free Software Foundation; either version 3 of 
-# the License, or (at your option) any later version.
-#
-# Reststop is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU Lesser General Public 
-# License along with this program.  If not, see 
-# <http://www.gnu.org/licenses/>.
-#--
+$LOG = Logger.new(STDOUT)
 
-# Extends and overrides Camping for convenient RESTfulness.
-#
-# Have a look at:
-#
-# * Camping::Controllers#REST for help on using RESTful controllers
-# * Camping#render for help on grouping your views by output format
-#
-module Camping
-  
-  # Overrides Camping's goes() mechanism so that we can add our stuff.
-  # ... there must be a saner way to do this? >:|
-  #
-  # Also modifies Camping's qsp() method to allow parsing of XML input data.
-  #
-  # FIXME: looks like this breaks auto-reloading when using the camping
-  #        server for launching apps :(
-  S2 = IO.read(__FILE__).gsub(/^  S2 = I.+$/,'') # :nodoc:
-  class << self
-    # alias_method call is conditional only to make `rake package` happy
-    alias_method :camping_goes, :goes
-    def goes(m) # :nodoc:
-      camping_goes m
-      eval S2.gsub('Camping', m.to_s), TOPLEVEL_BINDING
-    end
-  end
-
-  # Overrides Camping's query parsing method so that XML input is parsed
-  # into @input as an object usable more or less in the same manner as
-  # a standard Hash input. 
-  #
-  # This is necessary for dealing with ActiveResource calls, since ActiveResource
-  # submits its POST and PUT data as XML instead of the standard CGI query
-  # string.
-  #
-  # The method automatically determines whether input is XML or standard
-  # CGI query and parses it accordingly.
-  def self.qsp(qs, d='&;', y=nil, z=H[])
-    if qs.kind_of?(String) && !qs.nil? && !qs.empty? && qs =~ /^<\?xml/
-      qxp(qs)
-    else  
-      m = proc {|_,o,n|o.u(n,&m)rescue([*o]<<n)}
-      (qs||'').
-          split(/[#{d}] */n).
-          inject((b,z=z,H[])[0]) { |h,p| k, v=un(p).split('=',2)
-              h.u(k.split(/[\]\[]+/).reverse.
-                  inject(y||v) { |x,i| H[i,x] },&m)
-          }
-    end
-  end
-
-  # Parse an XML query (input) into a Hash usable more or less
-  # the same way as a Camping's standard Hash input.
-  def self.qxp(qxml)
-    #xml = XmlSimple.xml_in_string(qxml, 'forcearray' => false)
-    H.new Hash.from_xml(qxml)
-  end
-
-  # This override is taken and slightly modified from the Camping mailing list;
-  # it fakes PUT/DELETE HTTP methods, since many browsers don't support them.
-  #
-  # In your forms you will have to add:
-  #
-  # input :name => '_method', :type => 'hidden', :value => 'VERB'
-  #
-  # ... where VERB is one of put, post, or delete. The form's actual :method 
-  # parameter must be 'post' (i.e. :method => post).
-  #
-  def service(*a)
-    
-    if @env.REQUEST_METHOD == 'POST' && (input['_method'] == 'put' || input['_method'] == 'delete')
-      @env.REQUEST_METHOD = input._method.upcase
-      @method = input._method
-    end
-    
-    super(*a)
-  end
-  
-  # Overrides Camping's render method to add the ability to specify a format 
-  # module when rendering a view.
-  #
-  # The format can also be specified in other ways (shown in this order 
-  # of precedence):
-  #
-  # 1. By providing a second parameter to render()
-  #    (eg: <tt>render(:foo, :HTML)</tt>)
-  # 2. By setting the @format variable
-  # 3. By providing a 'format' parameter in the request (i.e. input[:format])
-  # 4. By adding a file-format extension to the url (e.g. /items.xml or 
-  #    /items/2.html).
-  #
-  # For example, you could have:
-  #
-  #   module Foobar::Views
-  #
-  #     module HTML
-  #       def foo
-  #         # ... render some HTML content
-  #       end
-  #     end
-  #
-  #     module RSS
-  #       def foo
-  #         # ... render some RSS content
-  #       end
-  #     end
-  #
-  #   end
-  #
-  # Then in your controller, you would call render() like this:
-  #
-  #   render(:foo, :HTML) # render the HTML version of foo
-  #
-  # or
-  #
-  #   render(:foo, :RSS) # render the RSS version of foo
-  #
-  # or
-  #
-  #   @format = :RSS
-  #   render(:foo) # render the RSS version of foo
-  #
-  # or
-  # 
-  #   # url is /foobar/1?format=RSS
-  #   render(:foo) # render the RSS version of foo
-  #
-  # or 
-  #
-  #   # url is /foobar/1.rss
-  #   render(:foo) # render the RSS version of foo
-  #
-  # If no format is specified, render() will behave like it normally does in 
-  # Camping, by looking for a matching view method directly
-  # in the Views module.
-  #
-  # You can also specify a default format module by calling 
-  # <tt>default_format</tt> after the format module definition.
-  # For example:
-  #
-  #   module Foobar::Views
-  #     module HTML
-  #       # ... etc.
-  #     end
-  #     default_format :HTML
-  #   end
-  #
-  def render(action, format = nil)
-    format ||= @format
-    
-    if format.nil?
-      begin
-        ct = CONTENT_TYPE
-      rescue NameError
-        ct = 'text/html'
+module Reststop
+  module Base
+    def reststop_service(*a)
+      if @env['REQUEST_METHOD'] == 'POST' && (input['_method'] == 'put' || input['_method'] == 'delete')
+        @env['REQUEST_METHOD'] = input._method.upcase
+        @method = input._method
       end
-      @headers['Content-Type'] ||= ct
-      
-      super(action)
-    else
-      m = Mab.new({}, self)
-      mod = "Camping::Views::#{format.to_s}".constantize
-      m.extend mod
-      
-      begin
-        ct = mod::CONTENT_TYPE
-      rescue NameError
-        ct = "text/#{format.to_s.downcase}"
+  	  @a0=a[0] if !a.empty?
+      camping_service(*a)
+    end
+
+    # Overrides Camping's render method to add the ability to specify a format
+    # module when rendering a view.
+    #
+    # The format can also be specified in other ways (shown in this order
+    # of precedence):
+    #
+    # 1. By providing a second parameter to render()
+    #    (eg: <tt>render(:foo, :HTML)</tt>)
+    # 2. By setting the @format variable
+    # 3. By providing a 'format' parameter in the request (i.e. input[:format])
+    # 4. By adding a file-format extension to the url (e.g. /items.xml or
+    #    /items/2.html).
+    #
+    # For example, you could have:
+    #
+    #   module Foobar::Views
+    #
+    #     module HTML
+    #       def foo
+    #         # ... render some HTML content
+    #       end
+    #     end
+    #
+    #     module RSS
+    #       def foo
+    #         # ... render some RSS content
+    #       end
+    #     end
+    #
+    #   end
+    #
+    # Then in your controller, you would call render() like this:
+    #
+    #   render(:foo, :HTML) # render the HTML version of foo
+    #
+    # or
+    #
+    #   render(:foo, :RSS) # render the RSS version of foo
+    #
+    # or
+    #
+    #   @format = :RSS
+    #   render(:foo) # render the RSS version of foo
+    #
+    # or
+    #
+    #   # url is /foobar/1?format=RSS
+    #   render(:foo) # render the RSS version of foo
+    #
+    # or
+    #
+    #   # url is /foobar/1.rss
+    #   render(:foo) # render the RSS version of foo
+    #
+    # If no format is specified, render() will behave like it normally does in
+    # Camping, by looking for a matching view method directly
+    # in the Views module.
+    #
+    # You can also specify a default format module by calling
+    # <tt>default_format</tt> after the format module definition.
+    # For example:
+    #
+    #   module Foobar::Views
+    #     module HTML
+    #       # ... etc.
+    #     end
+    #     default_format :HTML
+    #   end
+    #
+    def reststop_render(action, format = nil)
+      format ||= @format
+
+      if format.nil?
+        begin
+          ct = CONTENT_TYPE
+        rescue NameError
+          ct = 'text/html'
+        end
+        @headers['Content-Type'] ||= ct
+    		camping_render(action)
+      else
+
+    		app_name = self.class.name.split("::").first							# @techarch : get the name of the app
+            mab = (app_name + '::Mab').constantize								# @techarch : get the Mab class
+    		m = mab.new({}, self)																# @techarch : instantiate Mab
+    		mod = (app_name + "::Views::#{format.to_s}").constantize	# @techarch : get the right Views format class
+
+
+        m.extend mod
+
+        begin
+          ct = mod::CONTENT_TYPE
+        rescue NameError
+          ct = "text/#{format.to_s.downcase}"
+        end
+        @headers['Content-Type'] = ct
+
+        s = m.capture{m.send(action)}
+        s = m.capture{send(:layout){s}} if /^_/!~@method.to_s and m.respond_to?(:layout)	# @techarch : replaced a[0] by @method (not 100% sure that's right though)
+        s
       end
-      @headers['Content-Type'] = ct
-      
-      s = m.capture{m.send(action)}
-      s = m.capture{send(:layout){s}} if /^_/!~a[0].to_s and m.respond_to?(:layout)
-      s
     end
   end
 
-  # See Camping#render
+  
   module Views
-    class << self
-      # Call this inside your Views module to set a default format.
-      #
-      # For example:
-      #
-      #   module Foobar::Views
-      #     module HTML
-      #       # ... etc.
-      #     end
-      #     default_format :XML
-      #   end
-      def default_format(m)
-        mod = "Camping::Views::#{m.to_s}".constantize
-        Mab.class_eval{include mod}
-      end
-    end
-  end
-  
-  module Controllers 
-    class << self
-      def read_format(input, env) #:nodoc:
-        if input[:format] && !input[:format].empty?
-          input[:format].upcase.intern
-        elsif env['PATH_INFO'] =~ /\.([a-z]+)$/
-          $~[1].upcase.intern
-        end
-      end
-      
-      # Calling <tt>REST "<resource name>"</tt> creates a controller with the
-      # appropriate routes and maps your REST methods to standard
-      # Camping controller mehods. This is meant to be used in your Controllers
-      # module in place of <tt>R <routes></tt>.
-      #
-      # Your REST class should define the following methods:
-      # 
-      # * create
-      # * read(id)
-      # * update(id)
-      # * destroy(id)
-      # * list
-      # 
-      # Routes will be automatically created based on the resource name fed to the
-      # REST method. <b>Your class must have the same (but CamelCaps'ed) 
-      # name as the resource name.</b> So if your resource name is 'kittens', 
-      # your controller class must be Kittens.
-      #
-      # For example:
-      #
-      #   module Foobar::Controllers
-      #     class Kittens < REST 'kittens'
-      #       # POST /kittens
-      #       def create
-      #       end
-      #
-      #       # GET /kittens/(\d+)
-      #       def read(id)
-      #       end
-      #
-      #       # PUT /kittens/(\d+)
-      #       def update(id)
-      #       end
-      #
-      #       # DELETE /kittens/(\d+)
-      #       def destroy(id)
-      #       end
-      #
-      #       # GET /kittens
-      #       def list
-      #       end
-      #     end
-      #   end
-      #
-      # Custom actions are also possible. For example, to implement a 'meow' 
-      # action simply add a 'meow' method to the above controller:
-      #
-      #   # POST/GET/PUT/DELETE /kittens/meow
-      #   # POST/GET/PUT/DELETE /kittens/(\d+)/meow
-      #   def meow(id)
-      #   end
-      #
-      # Note that a custom action will respond to all four HTTP methods 
-      # (POST/GET/PUT/DELETE).
-      #
-      # Optionally, you can specify a <tt>:prefix</tt> key that will prepend the
-      # given string to the routes. For example, the following will create all 
-      # of the above routes, prefixed with "/pets" 
-      # (i.e. <tt>POST '/pets/kittens'</tt>,  <tt>GET '/pets/kittens/(\d+)'</tt>, 
-      # etc.):
-      #
-      #   module Foobar::Controllers
-      #     class Items < REST 'kittens', :prefix => '/pets'
-      #       # ...
-      #     end
-      #   end
-      #
-      # Format-based routing similar to that in ActiveResource is also implemented. 
-      # For example, to get a list of kittens in XML format, place a 
-      # <tt>GET</tt> call to <tt>/kittens.xml</tt>.
-      # See the documentation for the render() method for more info.
-      #
-      def REST(r, options = {})
-        crud = R "#{options[:prefix]}/#{r}/([0-9a-zA-Z]+)/([a-z_]+)(?:\.[a-z]+)?",
-          "#{options[:prefix]}/#{r}/([0-9a-zA-Z]+)(?:\.[a-z]+)?",
-          "#{options[:prefix]}/#{r}/([a-z_]+)(?:\.[a-z]+)?",
-          "#{options[:prefix]}/#{r}(?:\.[a-z]+)?"
-          
-        crud.module_eval do
-          meta_def(:restful?){true}
-          
-          $LOG.debug("Creating RESTful controller for #{r.inspect} using Reststop #{::Reststop::VERSION::STRING}") if $LOG
-          
-          def get(id_or_custom_action = nil, custom_action =  nil) # :nodoc:
-            id = input['id'] if input['id']
-            
-            custom_action = input['action'] if input['action']
-            
-            if self.methods.include? id_or_custom_action
-              custom_action ||= id_or_custom_action
-              id ||= nil
-            else
-              id ||= id_or_custom_action
-            end
-            
-            id = id.to_i if id && id =~ /^[0-9]+$/
-            
-            @format = Controllers.read_format(input, @env)
-            
-            begin
-              if id.nil? && input['id'].nil?
-                custom_action ? send(custom_action) : list
-              else
-                custom_action ? send(custom_action, id || input['id']) : read(id || input['id'])
-              end
-            rescue NoMethodError => e
-              # FIXME: this is probably not a good way to do this, but we need to somehow differentiate
-              #        between 'no such route' vs. other NoMethodErrors
-              if e.message =~ /no such method/
-                return no_method(e)
-              else
-                raise e
-              end
-            rescue ActiveRecord::RecordNotFound => e
-              return not_found(e)
-            end
-          end
-          
-          
-          def post(custom_action = nil) # :nodoc:
-            @format = Controllers.read_format(input, @env)
-            custom_action ? send(custom_action) : create
-          end
-          
-          
-          def put(id, custom_action = nil) # :nodoc:
-            id = id.to_i if id =~ /^[0-9]+$/
-            @format = Controllers.read_format(input, @env)
-            custom_action ? send(custom_action, id || input['id']) : update(id || input['id'])
-          end
-          
-          
-          def delete(id, custom_action = nil) # :nodoc:
-            id = id.to_i if id =~ /^[0-9]+$/
-            @format = Controllers.read_format(input, @env)
-            custom_action ? send(custom_action, id || input['id']) : destroy(id || input['id'])
-          end
-          
-          private
-          def _error(message, status_code = 500, e = nil)
-            @status = status_code
-            @message = message
-            begin
-              render "error_#{status_code}".intern
-            rescue NoMethodError
-              if @format.to_s == 'XML'
-                "<error code='#{status_code}'>#{@message}</error>"
-              else
-                out  = "<strong>#{@message}</strong>"
-                out += "<pre style='color: #bbb'><strong>#{e.class}: #{e}</strong>\n#{e.backtrace.join("\n")}</pre>" if e
-                out
-              end
-            end
-          end
-          
-          def no_method(e)
-            _error("No controller method responds to this route!", 501, e)
-          end
-          
-          def not_found(e)
-            _error("Record not found!", 404, e)
-          end
-        end
-        crud
-      end
+    # Call this inside your Views module to set a default format.
+    #
+    # For example:
+    #
+    #   module Foobar::Views
+    #     module HTML
+    #       # ... etc.
+    #     end
+    #     default_format :XML
+    #   end
+    def default_format(m)
+      mod = "#{self}::#{m.to_s}".constantize
+      mab = self.to_s.gsub('::Views','::Mab').constantize		# @techarch : get the Mab class
+      mab.class_eval{include mod}
     end
   end
 
   module Helpers
-    alias_method :_R, :R
-    
     # Overrides Camping's routing helper to make it possible to route RESTful resources.
     #
     # Some usage examples:
@@ -407,41 +188,223 @@ module Camping
     #   R(@kitten, 'meow')    # /kittens/1/meow
     #   R(Kittens, 'list', :colour => 'black')  # /kittens/list?colour=black
     #
-    # The current output format is retained, so if the current <tt>@format</tt> is <tt>:XML</tt>, 
+    # The current output format is retained, so if the current <tt>@format</tt> is <tt>:XML</tt>,
     # the URL will be /kittens/1.xml rather than /kittens/1.
     #
     # Note that your controller names might not be loaded if you're calling <tt>R</tt> inside a
     # view module. In that case you should use the fully qualified name (i.e. Myapp::Controllers::Kittens)
-    # or include the Controllers module into your view module. 
+    # or include the Controllers module into your view module.
     def R(c, *g)
-      if Controllers.constants.include?(cl = c.class.name.split("::").last.pluralize)
-        path = "/#{cl.underscore}/#{c.id}"
-        path << ".#{@format.to_s.downcase}" if @format
-        path << "/#{g.shift}" unless g.empty? 
-        self / path
-      elsif c.respond_to?(:restful?) && c.restful?
-        base = c.name.split("::").last.underscore
-        id_or_action = g.shift
-        if id_or_action =~ /\d+/
-          id = id_or_action
-          action = g.shift
-        else
-          action = id_or_action
-        end
-        
-        path = "/#{base}"
-        path << "/#{id}" if id
-        path << "/#{action}" if action
-        path << ".#{@format.to_s.downcase}" if @format 
-        path << "?#{g.collect{|a|a.collect{|k,v| U.escape(k)+"="+U.escape(v)}.join("&")}.join("&")}" unless g.empty? # FIXME: undefined behaviour if there are multiple arguments left
-        return path
-      else
-        _R(c, *g)
+
+		cl = c.class.name.split("::").last.pluralize
+		app_name = c.class.name.split("::").first
+		ctrl_cl = app_name + '::Controllers'				# @techarch : get to the Controllers using the current app
+		ctrl = (app_name != 'Class') ? ctrl_cl.constantize : Controllers
+		
+		if ctrl.constants.include?(cl)				#@techarch updated to use new cl variable
+			path = "/#{cl.underscore}/#{c.id}"
+			path << ".#{@format.to_s.downcase}" if @format
+			path << "/#{g.shift}" unless g.empty?
+			self / path
+		  elsif c.respond_to?(:restful?) && c.restful?
+			base = c.name.split("::").last.underscore
+			id_or_action = g.shift  
+			if id_or_action.to_s =~ /\d+/			#@techarch needed a to_s after id_or_action to allow pattern matching
+			  id = id_or_action
+			  action = g.shift
+			else
+			  action = id_or_action
+			end
+
+			path = "/#{base}"
+			path << "/#{id}" if id
+			path << "/#{action}" if action
+			path << ".#{@format.to_s.downcase}" if @format
+			
+			#@techarch substituted U for u=Rack::Utils
+			u=Rack::Utils
+			path << "?#{g.collect{|a|a.collect{|k,v| u.escape(k)+"="+u.escape(v)}.join("&")}.join("&")}" unless g.empty? # FIXME: undefined behaviour if there are multiple arguments left
+			return path
+		else
+			_R(c, *g)
+		end
+	end # def R
+  end # module Helpers
+
+  module Controllers
+    def self.determine_format(input, env) #:nodoc:
+      if input[:format] && !input[:format].empty?
+        input[:format].upcase.intern
+      elsif env['PATH_INFO'] =~ /\.([a-z]+)$/
+        $~[1].upcase.intern
       end
     end
-  end
 
-end
+    # Calling <tt>REST "<resource name>"</tt> creates a controller with the
+    # appropriate routes and maps your REST methods to standard
+    # Camping controller mehods. This is meant to be used in your Controllers
+    # module in place of <tt>R <routes></tt>.
+    #
+    # Your REST class should define the following methods:
+    #
+    # * create
+    # * read(id)
+    # * update(id)
+    # * destroy(id)
+    # * list
+    #
+    # Routes will be automatically created based on the resource name fed to the
+    # REST method. <b>Your class must have the same (but CamelCaps'ed)
+    # name as the resource name.</b> So if your resource name is 'kittens',
+    # your controller class must be Kittens.
+    #
+    # For example:
+    #
+    #   module Foobar::Controllers
+    #     class Kittens < REST 'kittens'
+    #       # POST /kittens
+    #       def create
+    #       end
+    #
+    #       # GET /kittens/(\d+)
+    #       def read(id)
+    #       end
+    #
+    #       # PUT /kittens/(\d+)
+    #       def update(id)
+    #       end
+    #
+    #       # DELETE /kittens/(\d+)
+    #       def destroy(id)
+    #       end
+    #
+    #       # GET /kittens
+    #       def list
+    #       end
+    #     end
+    #   end
+    #
+    # Custom actions are also possible. For example, to implement a 'meow'
+    # action simply add a 'meow' method to the above controller:
+    #
+    #   # POST/GET/PUT/DELETE /kittens/meow
+    #   # POST/GET/PUT/DELETE /kittens/(\d+)/meow
+    #   def meow(id)
+    #   end
+    #
+    # Note that a custom action will respond to all four HTTP methods
+    # (POST/GET/PUT/DELETE).
+    #
+    # Optionally, you can specify a <tt>:prefix</tt> key that will prepend the
+    # given string to the routes. For example, the following will create all
+    # of the above routes, prefixed with "/pets"
+    # (i.e. <tt>POST '/pets/kittens'</tt>,  <tt>GET '/pets/kittens/(\d+)'</tt>,
+    # etc.):
+    #
+    #   module Foobar::Controllers
+    #     class Items < REST 'kittens', :prefix => '/pets'
+    #       # ...
+    #     end
+    #   end
+    #
+    # Format-based routing similar to that in ActiveResource is also implemented.
+    # For example, to get a list of kittens in XML format, place a
+    # <tt>GET</tt> call to <tt>/kittens.xml</tt>.
+    # See the documentation for the render() method for more info.
+    #
+    def REST(r, options = {})
+      crud = R "#{options[:prefix]}/#{r}/([0-9a-zA-Z]+)/([a-z_]+)(?:\.[a-z]+)?",
+        "#{options[:prefix]}/#{r}/([0-9a-zA-Z]+)(?:\.[a-z]+)?",
+        "#{options[:prefix]}/#{r}/([a-z_]+)(?:\.[a-z]+)?",
+        "#{options[:prefix]}/#{r}(?:\.[a-z]+)?"
+
+      crud.module_eval do
+        meta_def(:restful?){true}
+
+        $LOG.debug("Creating RESTful controller for #{r.inspect} using Reststop #{'pull version number here'}") if $LOG
+
+        def get(id_or_custom_action = nil, custom_action =  nil) # :nodoc:
+          id = input['id'] if input['id']
+
+          custom_action = input['action'] if input['action']
+
+          if self.methods.include? id_or_custom_action
+            custom_action ||= id_or_custom_action
+            id ||= nil
+          else
+            id ||= id_or_custom_action
+          end
+
+          id = id.to_i if id && id =~ /^[0-9]+$/
+
+          @format = Reststop::Controllers.determine_format(input, @env)
+
+          begin
+            if id.nil? && input['id'].nil?
+              custom_action ? send(custom_action) : list
+            else
+              custom_action ? send(custom_action, id || input['id']) : read(id || input['id'])
+            end
+          rescue NoMethodError => e
+            # FIXME: this is probably not a good way to do this, but we need to somehow differentiate
+            #        between 'no such route' vs. other NoMethodErrors
+            if e.message =~ /no such method/
+              return no_method(e)
+            else
+              raise e
+            end
+          rescue ActiveRecord::RecordNotFound => e
+            return not_found(e)
+          end
+        end
+
+
+        def post(custom_action = nil) # :nodoc:
+          @format = Reststop::Controllers.determine_format(input, @env)
+          custom_action ? send(custom_action) : create
+        end
+
+        def put(id, custom_action = nil) # :nodoc:
+          id = id.to_i if id =~ /^[0-9]+$/
+          @format = Reststop::Controllers.determine_format(input, @env)
+          custom_action ? send(custom_action, id || input['id']) : update(id || input['id'])
+        end
+
+        def delete(id, custom_action = nil) # :nodoc:
+          id = id.to_i if id =~ /^[0-9]+$/
+          @format = Reststop::Controllers.determine_format(input, @env)
+          custom_action ? send(custom_action, id || input['id']) : destroy(id || input['id'])
+        end
+
+        private
+        def _error(message, status_code = 500, e = nil)
+          @status = status_code
+          @message = message
+          begin
+            render "error_#{status_code}".intern
+          rescue NoMethodError
+            if @format.to_s == 'XML'
+              "<error code='#{status_code}'>#{@message}</error>"
+            else
+              out  = "<strong>#{@message}</strong>"
+              out += "<pre style='color: #bbb'><strong>#{e.class}: #{e}</strong>\n#{e.backtrace.join("\n")}</pre>" if e
+              out
+            end
+          end
+        end
+
+        def no_method(e)
+          _error("No controller method responds to this route!", 501, e)
+        end
+
+        def not_found(e)
+          _error("Record not found!", 404, e)
+        end
+      end
+      crud
+    end # def REST
+  end # module Controllers
+end # module Reststop
 
 module Markaby
   class Builder

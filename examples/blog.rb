@@ -1,345 +1,384 @@
 #!/usr/bin/env ruby
 
-#
-# This is a RESTful version of the Camping-based Blog application.
-#
-# The original version can be found here: 
-# http://code.whytheluckystiff.net/camping/browser/trunk/examples/blog.rb
-#
-
 require 'rubygems'
+#require 'ruby-debug'			# @techarch : commented out since only needed for local debugging
 
-gem 'camping', '~> 1.5'
-gem 'reststop', '~> 0.2'
+require 'markaby'					# @techarch : added explicit require
+require 'camping'					# @techarch
+require 'camping/session'	# @techarch : added explicit require since session has changed in Camping 2.0
 
-require 'camping'
-require 'camping/db'
+gem 'RedCloth'						# @techarch : added since it is referenced in the Posts model
+require 'redcloth'				# @techarch : added
+
+#gem 'camping', '~> 2.0'
+gem 'camping' , '~> 2.0'	# @techarch : updated version
+
+#gem 'reststop', '~> 0.3'
+
+=begin										# @techarch : commented out since only needed for local debugging
+$: << '../../camping-camping/lib'
+$: << '../lib'
+require 'camping-unabridged'
+require 'camping/ar'
 require 'camping/session'
+=end
 
-begin
+#begin										# @techarch : commented out since only needed for local debugging
   # try to use local copy of library
-  require '../lib/reststop'
-rescue LoadError
-  # ... otherwise default to rubygem
-  require 'reststop'
-end
-  
+  #require '../lib/reststop2'
+  $: << '../lib/'
+  require 'reststop.rb'			# @techarch : adjusted so that it is located in the same current folder
+#rescue LoadError
+#  # ... otherwise default to rubygem
+#  require 'reststop'
+#end
+
 Camping.goes :Blog
 
 module Blog
-    include Camping::Session
+  include Camping::Session
+  include Reststop
+ 
+  Controllers.extend Reststop::Controllers
+end
+
+module Blog::Base
+  alias camping_render render
+  alias camping_service service
+  include Reststop::Base
+  alias service reststop_service
+  alias render reststop_render
 end
 
 module Blog::Models
-    class Post < Base
-        belongs_to :user
-        has_many :comments
-    end
-    class Comment < Base
-        belongs_to :user
-    end
-    class User < Base; end
+  class Post < Base
+    belongs_to :user
 
-    class CreateTheBasics < V 1.0
-      def self.up
-        create_table :blog_posts do |t|
-          t.column :user_id,  :integer, :null => false
-          t.column :title,    :string,  :limit => 255
-          t.column :body,     :text
-        end
-        create_table :blog_users do |t|
-          t.column :username, :string
-          t.column :password, :string
-        end
-        create_table :blog_comments do |t|
-          t.column :post_id,  :integer, :null => false
-          t.column :username, :string
-          t.column :body,     :text
-        end
-        User.create :username => 'admin', :password => 'camping'
-      end
-      def self.down
-        drop_table :blog_posts
-        drop_table :blog_users
-        drop_table :blog_comments
-      end
+    before_save do |record|
+       cloth = RedCloth.new(record.body)
+       cloth.hard_breaks = false
+       record.html_body = cloth.to_html
     end
+  end
+
+  class Comment < Base; belongs_to :user; end
+  class User < Base; end
+
+  class BasicFields < V 1.1
+    def self.up
+      create_table :blog_posts, :force => true do |t|
+        t.integer :user_id,          :null => false
+        t.string  :title,            :limit => 255
+        t.text    :body, :html_body
+        t.timestamps
+      end
+      create_table :blog_users, :force => true do |t|
+        t.string  :username, :password
+      end
+      create_table :blog_comments, :force => true do |t|
+        t.integer :post_id,          :null => false
+        t.string  :username
+        t.text    :body, :html_body
+        t.timestamps
+      end
+      User.create :username => 'admin', :password => 'camping'
+    end
+
+    def self.down
+      drop_table :blog_posts
+      drop_table :blog_users
+      drop_table :blog_comments
+    end
+  end
 end
 
 module Blog::Controllers
+  extend Reststop::Controllers
+	class Login < R '/login'		# @techarch : added explicit login controller	
+		def get
+			render :_login
+		end
+	end
+	
     class Posts < REST 'posts'      
+      # POST /posts
+      def create
+        require_login!
+        @post = Post.create :title => (input.post_title || input.title),	# @techarch : allow for REST-client based update 
+		  :body => (input.post_body || input.body),								# @techarch : allow for REST-client based update
+          :user_id => @state.user_id
+        redirect R(@post)	
+      end
 
-        # POST /posts
-        def create
-            unless @state.user_id.blank?
-                post = Post.create :title => input.post_title, :body => input.post_body,
-                                   :user_id => @state.user_id
-                redirect R(Posts)
-            else
-              _error("Unauthorized", 401)
-            end
-        end
+      # GET /posts/1
+      # GET /posts/1.xml
+      def read(post_id)
+        @post = Post.find(post_id)
+        @comments = Models::Comment.find(:all, :conditions => ['post_id = ?', post_id])
+        render :view
+      end
 
-        # GET /posts/1
-        # GET /posts/1.xml
-        def read(post_id) 
-            @post = Post.find post_id
-            @comments = Models::Comment.find :all, :conditions => ['post_id = ?', post_id]
-            render :view
-        end
+      # PUT /posts/1
+      def update(post_id)
+        require_login!
+        @post = Post.find(post_id)
+        @post.update_attributes :title => (input.post_title || input.title),	# @techarch : allow for REST-client based update 
+			:body => (input.post_body || input.body)									# @techarch : allow for REST-client based update 
+        redirect R(@post)
+      end
 
-        # PUT /posts/1
-        def update(post_id)
-            unless @state.user_id.blank?
-                @post = Post.find post_id
-                @post.update_attributes :title => input.post_title, :body => input.post_body
-                redirect R(@post)
-            else
-              _error("Unauthorized", 401)
-            end
-        end
+      # DELETE /posts/1
+      def delete(post_id)
+        require_login!
+        @post = Post.find post_id
 
-        # DELETE /posts/1
-        def delete(post_id)
-            unless @state.user_id.blank?
-                @post = Post.find post_id
-                
-                if @post.destroy
-                  redirect R(Posts)
-                else
-                  _error("Unable to delete post #{@post.id}", 500)
-                end
-            else
-              _error("Unauthorized", 401)
-            end
+        if @post.destroy
+          redirect R(Posts)
+        else
+          _error("Unable to delete post #{@post.id}", 500)
         end
+      end
 
-        # GET /posts
-        # GET /posts.xml
-        def list
-            @posts = Post.find :all
-            render :index
-        end
-        
-        
-        # GET /posts/new
-        def new
-            unless @state.user_id.blank?
-                @user = User.find @state.user_id
-                @post = Post.new
-            end
-            render :add
-        end
+      # GET /posts
+      # GET /posts.xml
+      def list
+        @posts = Post.all(:order => 'updated_at DESC')
+        s=render :index
+		    s
+      end
 
-        # GET /posts/1/edit
-        def edit(post_id) 
-            unless @state.user_id.blank?
-                @user = User.find @state.user_id
-            end
-            @post = Post.find post_id
-            render :edit
-        end
-        
-        # GET /posts/info
-        def info
-            div do
-                code args.inspect; br; br
-                code @env.inspect; br
-                code "Link: #{R(Info, 1, 2)}"
-            end
-        end
+      # GET /posts/new
+      def new
+        #@state.user_id = 1		# @techarch : commented out as was probably hard-coded for testing purpose
+        require_login!
+		@user = User.find @state.user_id	# @techarch : added since we need the user info
+        @post = Post.new
+        render :add
+      end
+
+      # GET /posts/1/edit
+      def edit(post_id)
+        require_login!
+ 		@user = User.find @state.user_id	# @techarch : added since we need the user info
+        @post = Post.find(post_id)
+        render :edit
+      end
     end
      
     class Comments < REST 'comments'
-        # POST /comments
-        def create
-            Models::Comment.create(:username => input.post_username,
-                       :body => input.post_body, :post_id => input.post_id)
-            redirect R(Posts, input.post_id)
-        end
+      # POST /comments
+      def create
+        Models::Comment.create(:username => (input.post_username || input.username),	# @techarch : allow for REST-client based		update 
+			:body => (input.post_body || input.body),	# @techarch : allow for REST-client based update  
+			:post_id => input.post_id)
+        redirect R(Posts, input.post_id)
+      end
     end
-    
+
     class Sessions < REST 'sessions'
         # POST /sessions
         def create
-            @user = User.find :first, :conditions => ['username = ? AND password = ?', input.username, input.password]
-     
-            if @user
-                @login = 'login success !'
-                @state.user_id = @user.id
-            else
-                @login = 'wrong user name or password'
-            end
-            render :login
+          @user = User.find_by_username_and_password(input.username, input.password)
+
+          if @user
+            @state.user_id = @user.id
+            redirect R(Posts)
+          else
+            @info = 'Wrong username or password.'
+          end
+          render :login
         end   
 
         # DELETE /sessions
         def delete
-            @state.user_id = nil
-            render :logout
+          @state.user_id = nil
+          redirect R(Posts) 		# @techarch : changed redirect from Index (does not exist) to Posts
         end
     end
     
     # You can use old-fashioned Camping controllers too!
     class Style < R '/styles.css'
-        def get
-            @headers["Content-Type"] = "text/css; charset=utf-8"
-            @body = %{
-                body {
-                    font-family: Utopia, Georga, serif;
-                }
-                h1.header {
-                    background-color: #fef;
-                    margin: 0; padding: 10px;
-                }
-                div.content {
-                    padding: 10px;
-                }
-            }
-        end
+      def get
+        @headers["Content-Type"] = "text/css; charset=utf-8"
+        @body = %{
+          body {
+              font-family: Utopia, Georga, serif;
+          }
+          h1.header {
+              background-color: #fef;
+              margin: 0; padding: 10px;
+          }
+          div.content {
+              padding: 10px;
+          }
+        }
+      end
     end
 end
 
+module Blog::Helpers
+  alias_method :_R, :R
+  remove_method :R
+  include Reststop::Helpers
 
-Markaby::Builder.set(:indent, 2)
+  def logged_in?
+    !!@state.user_id
+  end
+
+  def require_login!
+    unless logged_in?
+      redirect(R(Blog::Controllers::Login))	# @techarch: add explicit route
+      throw :halt
+    end
+  end
+end
+
 
 module Blog::Views
-    module HTML
-        include Blog::Controllers 
-      
-        def layout
-          html do
-            head do
-              title 'blog'
-              link :rel => 'stylesheet', :type => 'text/css', 
-                   :href => self/'/styles.css', :media => 'screen'
-            end
-            body do
-              h1.header { a 'blog', :href => R(Posts) }
-              div.content do
-                self << yield
-              end
-            end
-          end
-        end
-    
-        def index
-          if @posts.empty?
-            p 'No posts found.'
-          else
-            for post in @posts
-              _post(post)
-            end
-          end
-          p { a 'Add', :href => R(Posts, 'new') }
-        end
-    
-        def login
-          p { b @login }
-          p { a 'Continue', :href => R(Posts, 'new') }
-        end
-    
-        def logout
-          p "You have been logged out."
-          p { a 'Continue', :href => R(Posts) }
-        end
-    
-        def add
-          if @user
-            _form(@post, :action => R(Posts))
-          else
-            _login
-          end
-        end
-    
-        def edit
-          if @user
-            _form(@post, :action => R(@post), :method => :put)
-          else
-            _login
-          end
-        end
-    
-        def view
-            _post(@post)
-    
-            p "Comment for this post:"
-            for c in @comments
-              h1 c.username
-              p c.body
-            end
-    
-            form :action => R(Comments), :method => 'post' do
-              label 'Name', :for => 'post_username'; br
-              input :name => 'post_username', :type => 'text'; br
-              label 'Comment', :for => 'post_body'; br
-              textarea :name => 'post_body' do; end; br
-              input :type => 'hidden', :name => 'post_id', :value => @post.id
-              input :type => 'submit'
-            end
-        end
-    
-        # partials
-        def _login
-          form :action => R(Sessions), :method => 'post' do
-            label 'Username', :for => 'username'; br
-            input :name => 'username', :type => 'text'; br
-    
-            label 'Password', :for => 'password'; br
-            input :name => 'password', :type => 'text'; br
-    
-            input :type => 'submit', :name => 'login', :value => 'Login'
-          end
-        end
-    
-        def _post(post)
-          h1 post.title
-          p post.body
-          p do
-            [a("Edit", :href => R(Posts, post.id, 'edit')), a("View", :href => R(Posts, post.id, 'edit'))].join " | "
-          end
-        end
-    
-        def _form(post, opts)
-          form(:action => R(Sessions), :method => 'delete') do
-          p do 
-            span "You are logged in as #{@user.username}"
-            span " | "
-            button(:type => 'submit') {'Logout'}
-          end
-          end
-          form({:method => 'post'}.merge(opts)) do
-            label 'Title', :for => 'post_title'; br
-            input :name => 'post_title', :type => 'text', 
-                  :value => post.title; br
-    
-            label 'Body', :for => 'post_body'; br
-            textarea post.body, :name => 'post_body'; br
-    
-            input :type => 'hidden', :name => 'post_id', :value => post.id
-            input :type => 'submit'
-          end
-        end
-    end
-    default_format :HTML
+  extend Reststop::Views
 
-    module XML
-      def layout
-        yield
-      end
-      
-      def index
-        @posts.to_xml(:root => 'blog')
-      end
-      
-      def view
-        @post.to_xml(:root => 'post')
+  module HTML
+    include Blog::Controllers
+    include Blog::Views
+
+    def layout
+      html do
+        head do
+          title 'blog'
+          link :rel => 'stylesheet', :type => 'text/css',
+               :href => self/'/styles.css', :media => 'screen'
+        end
+        body do
+          h1.header { a 'blog', :href => R(Posts) }
+          div.content do
+            self << yield
+          end
+        end
       end
     end
+
+    def index
+      if @posts.empty?
+        p 'No posts found.'
+      else
+        for post in @posts
+          _post(post)
+        end
+      end
+      p { a 'Add', :href => R(Posts, 'new') }
+    end
+
+    def login
+      p { b @login }
+      p { a 'Continue', :href => R(Posts, 'new') }
+    end
+
+    def logout
+      p "You have been logged out."
+      p { a 'Continue', :href => R(Posts) }
+    end
+
+    def add
+      if @user
+        _form(@post, :action => R(Posts))
+      else
+        _login
+      end
+    end
+
+    def edit
+      if @user
+        _form(@post, :action => R(@post), :method => :put) 
+      else
+        _login
+      end
+    end
+
+    def view
+      _post(@post)
+
+      p "Comment for this post:"
+      for c in @comments
+        h1 c.username
+        p c.body
+      end
+
+      form :action => R(Comments), :method => 'post' do
+        label 'Name', :for => 'post_username'; br
+        input :name => 'post_username', :type => 'text'; br
+        label 'Comment', :for => 'post_body'; br
+        textarea :name => 'post_body' do; end; br
+        input :type => 'hidden', :name => 'post_id', :value => @post.id
+        input :type => 'submit'
+      end
+    end
+
+    # partials
+    def _login
+      p do
+        "(default: admin/camping)"
+      end
+      form :action => R(Sessions), :method => 'post' do
+        label 'Username', :for => 'username'; br
+        input :name => 'username', :type => 'text'; br
+
+        label 'Password', :for => 'password'; br
+        input :name => 'password', :type => 'text'; br
+
+        input :type => 'submit', :name => 'login', :value => 'Login'
+      end
+    end
+
+    def _post(post)
+      h1 post.title
+      p post.body
+      p do
+        [a("Edit", :href => R(Posts, post.id, 'edit')), a("View", :href => R(Posts, post.id, 'edit'))].join " | "
+      end
+    end
+
+    def _form(post, opts)
+      form(:action => R(Sessions), :method => 'delete') do
+      p do
+        span "You are logged in as #{@user.username}"
+        span " | "
+        button(:type => 'submit') {'Logout'}
+      end
+      end
+      form({:method => 'post'}.merge(opts)) do
+        label 'Title', :for => 'post_title'; br
+        input :name => 'post_title', :type => 'text',
+              :value => post.title; br
+
+        label 'Body', :for => 'post_body'; br
+        textarea post.body, :name => 'post_body'; br
+
+        input :type => 'hidden', :name => 'post_id', :value => post.id
+        input :type => 'submit'
+      end
+    end
+  end
+  default_format :HTML
+
+  module XML
+    def layout
+      yield
+    end
+
+    def index
+      @posts.to_xml(:root => 'blog')
+    end
+
+    def view
+      @post.to_xml(:root => 'post')
+    end
+  end
 end
  
 def Blog.create
-    Camping::Models::Session.create_schema
-    Blog::Models.create_schema :assume => (Blog::Models::Post.table_exists? ? 1.0 : 0.0)
-end
+  raise "You must configure the database first in 'config/database.yml'!" unless File.exist?('config/database.yml')
+ 	dbconfig = YAML.load(File.read('config/database.yml'))								# @techarch
+	Camping::Models::Base.establish_connection  dbconfig['development']		# @techarch
 
+	Blog::Models.create_schema :assume => (Blog::Models::Post.table_exists? ? 1.0 : 0.0)
+end
