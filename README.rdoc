@@ -3,10 +3,10 @@
 <b>Reststop makes it easy to write RESTful[http://en.wikipedia.org/wiki/Representational_State_Transfer] 
 applications in Camping[http://github.com/camping/camping].</b>
 
-For info and downloads please see http://github.com/zuk/reststop
+For info and downloads please see http://github.com/camping/reststop
 
 
-*Authors*::    Matt Zukowski and Philippe Monnet (see http://github.com/zuk/reststop/commits/master)
+*Authors*::    Matt Zukowski and Philippe Monnet (see http://github.com/camping/reststop/commits/master)
 *Copyright*:: Copyright (c) 2010 Urbacon Ltd.
 *License*::   MIT License[http://en.wikipedia.org/wiki/MIT_License]
 
@@ -102,7 +102,7 @@ but here's a simple example of RESTful interaction with Restr:
 
 == License
 
-Copyright (c) 2010 the Contributors (see http://github.com/zuk/reststop/commits/master)
+Copyright (c) 2010 the Contributors (see http://github.com/camping/reststop/commits/master)
 
  Permission is hereby granted, free of charge, to any person
  obtaining a copy of this software and associated documentation
