@@ -13,9 +13,20 @@
 #   module Blog::Base
 #     alias camping_render render
 #     alias camping_service service
+#		alias camping_lookup lookup
 #     include Reststop::Base
 #     alias service reststop_service
 #     alias render reststop_render
+#
+#	# Overrides the new Tilt-centric lookup method In camping
+#	# RESTstop needs to have a first try at looking up the view
+#	# located in the Views::HTML module. 
+#   def lookup(n)
+#      T.fetch(n.to_sym) do |k|
+#        t = Blog::Views::HTML.method_defined?(k) || camping_lookup(n)
+#      end
+#    end
+
 #   end
 #   
 #   module Blog::Controllers
@@ -39,7 +50,7 @@
 # `include Reststop` call (via overriding of #extended)
 #
 # See examples/blog.rb for a working example.
-
+require 'logger'
 $LOG = Logger.new(STDOUT)
 
 module Reststop
@@ -123,7 +134,10 @@ module Reststop
     #   end
     #
     def reststop_render(action, format = nil)
-      format ||= @format
+	  format = nil unless format.is_a? Symbol
+
+	  app_name = self.class.name.split("::").first							# @techarch : get the name of the app
+	  format ||= @format
 
       if format.nil?
         begin
@@ -131,15 +145,13 @@ module Reststop
         rescue NameError
           ct = 'text/html'
         end
+
         @headers['Content-Type'] ||= ct
-    		camping_render(action)
+   		basic_render(action) # @techarch
       else
-
-    		app_name = self.class.name.split("::").first							# @techarch : get the name of the app
-            mab = (app_name + '::Mab').constantize								# @techarch : get the Mab class
-    		m = mab.new({}, self)																# @techarch : instantiate Mab
-    		mod = (app_name + "::Views::#{format.to_s}").constantize	# @techarch : get the right Views format class
-
+        mab = (app_name + '::Mab').constantize								# @techarch : get the Mab class
+    	m = mab.new({}, self)																# @techarch : instantiate Mab
+    	mod = (app_name + "::Views::#{format.to_s}").constantize	# @techarch : get the right Views format class
 
         m.extend mod
 
@@ -155,6 +167,16 @@ module Reststop
         s
       end
     end
+	
+	# Performs a basic camping rendering (without use of a layout)
+	# This method was added since the addition of Tilt support in camping 
+	# is assuming layout.
+	def basic_render(action)
+		app_name = self.class.name.split("::").first							# @techarch : get the name of the app
+        mab = (app_name + '::Mab').constantize								# @techarch : get the Mab class
+   		m = mab.new({}, self)														# @techarch : instantiate Mab
+		s = m.capture{m.send(action)}
+	end
   end
 
   

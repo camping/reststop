@@ -1,3 +1,8 @@
+=== 0.5.1 :: 2010-06-09 
+  * Update to align with the post 2.0 enhancements in Camping related to Tilt support.
+	Since Tilt support is now checking for the existing of view methods and Tilt views
+	RESTstop needs to ensure that view methods can be looked up in Views:HTML as opposed to Views.
+
 === 0.5.0 :: 2010-04-07
 
   * Major refactoring for compatibility with Camping 2.0. Thanks to Philippe Monnet

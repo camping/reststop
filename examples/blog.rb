@@ -11,12 +11,12 @@ gem 'RedCloth'						# @techarch : added since it is referenced in the Posts mode
 require 'redcloth'				# @techarch : added
 
 #gem 'camping', '~> 2.0'
-gem 'camping' , '~> 2.0'	# @techarch : updated version
+gem 'camping' , '>= 2.0'	# @techarch : updated version
 
 #gem 'reststop', '~> 0.3'
 
 =begin										# @techarch : commented out since only needed for local debugging
-$: << '../../camping-camping/lib'
+$: << '../../camping/lib'
 $: << '../lib'
 require 'camping-unabridged'
 require 'camping/ar'
@@ -44,10 +44,20 @@ end
 
 module Blog::Base
   alias camping_render render
+  alias camping_lookup lookup	# @techarch: required if camping > 2.0
   alias camping_service service
   include Reststop::Base
   alias service reststop_service
   alias render reststop_render
+  
+	# Overrides the new Tilt-centric lookup method In camping
+	# RESTstop needs to have a first try at looking up the view
+	# located in the Views::HTML module. 
+    def lookup(n)
+      T.fetch(n.to_sym) do |k|
+        t = Blog::Views::HTML.method_defined?(k) || camping_lookup(n)
+      end
+    end
 end
 
 module Blog::Models
@@ -94,6 +104,12 @@ end
 
 module Blog::Controllers
   extend Reststop::Controllers
+    class Index
+		def get
+			redirect '/posts'
+		end
+	end
+	
 	class Login < R '/login'		# @techarch : added explicit login controller	
 		def get
 			render :_login
@@ -144,7 +160,7 @@ module Blog::Controllers
       def list
         @posts = Post.all(:order => 'updated_at DESC')
         s=render :index
-		    s
+		s
       end
 
       # GET /posts/new
@@ -236,7 +252,7 @@ end
 
 module Blog::Views
   extend Reststop::Views
-
+  
   module HTML
     include Blog::Controllers
     include Blog::Views
