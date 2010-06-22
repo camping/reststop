@@ -1,3 +1,7 @@
+=== 0.5.2 :: 2010-06-21 
+  * Made the content-type in reststop_render to be text/html only if the format is :HTML, and application/#{format} otherwise
+  * Fixed issue in the new basic_render method where the layout was not being applied.
+
 === 0.5.1 :: 2010-06-09 
   * Update to align with the post 2.0 enhancements in Camping related to Tilt support.
 	Since Tilt support is now checking for the existing of view methods and Tilt views

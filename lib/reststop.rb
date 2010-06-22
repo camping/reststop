@@ -158,7 +158,7 @@ module Reststop
         begin
           ct = mod::CONTENT_TYPE
         rescue NameError
-          ct = "text/#{format.to_s.downcase}"
+          ct = "#{format == :HTML ? 'text' : 'application'}/#{format.to_s.downcase}" #@techarch - used to be text/***
         end
         @headers['Content-Type'] = ct
 
@@ -173,9 +173,10 @@ module Reststop
 	# is assuming layout.
 	def basic_render(action)
 		app_name = self.class.name.split("::").first							# @techarch : get the name of the app
-        mab = (app_name + '::Mab').constantize								# @techarch : get the Mab class
+        	mab = (app_name + '::Mab').constantize								# @techarch : get the Mab class
    		m = mab.new({}, self)														# @techarch : instantiate Mab
 		s = m.capture{m.send(action)}
+        	s = m.capture{send(:layout){s}} if /^_/!~@method.to_s and m.respond_to?(:layout)	# @techarch : replaced a[0] by @method (not 100% sure that's right though)
 	end
   end
 
