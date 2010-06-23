@@ -12,7 +12,7 @@ For info and downloads please see http://github.com/camping/reststop
 
 
 For an example of a complete Reststop-based Camping app, have a look at 
-http://github.com/zuk/reststop/blob/master/examples/blog.rb
+http://github.com/camping/reststop/blob/master/examples/blog.rb
 
 Reststop essentially gives you three things:
 
