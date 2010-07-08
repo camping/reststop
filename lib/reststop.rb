@@ -163,7 +163,7 @@ module Reststop
         @headers['Content-Type'] = ct
 
         s = m.capture{m.send(action)}
-        s = m.capture{send(:layout){s}} if /^_/!~@method.to_s and m.respond_to?(:layout)	# @techarch : replaced a[0] by @method (not 100% sure that's right though)
+        s = m.capture{send(:layout){s}} if /^_/!~action.to_s and m.respond_to?(:layout)	
         s
       end
     end
@@ -175,8 +175,20 @@ module Reststop
 		app_name = self.class.name.split("::").first							# @techarch : get the name of the app
         	mab = (app_name + '::Mab').constantize								# @techarch : get the Mab class
    		m = mab.new({}, self)														# @techarch : instantiate Mab
-		s = m.capture{m.send(action)}
-        	s = m.capture{send(:layout){s}} if /^_/!~@method.to_s and m.respond_to?(:layout)	# @techarch : replaced a[0] by @method (not 100% sure that's right though)
+		
+		tpl = lookup(action)	# check if we have a Tilt template
+		
+		raise "Can't find action #{action}" unless tpl
+		
+		s = (tpl == true) ? m.capture{m.send(action)} : tpl.render(self, {}) # if so render it
+		if /^_/!~action.to_s
+			layout_tpl = lookup(:layout)
+			if layout_tpl
+				b = Proc.new { s }
+				s = (layout_tpl == true) ? m.capture{send(:layout){s}} : layout_tpl.render(m, {},&b) # if so render it
+			end
+		end
+		s
 	end
   end
 

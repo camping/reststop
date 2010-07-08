@@ -2,7 +2,7 @@ module Reststop
   module VERSION #:nodoc:
     MAJOR = 0
     MINOR = 5
-    TINY  = 2
+    TINY  = 3
 
     STRING = [MAJOR, MINOR, TINY].join('.')
   end

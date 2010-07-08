@@ -1,3 +1,6 @@
+=== 0.5.3 :: 2010-07-07 
+  * Fixed issue in the new basic_render method where Tilt templates were not supported (on either actions or layout)
+
 === 0.5.2 :: 2010-06-21 
   * Made the content-type in reststop_render to be text/html only if the format is :HTML, and application/#{format} otherwise
   * Fixed issue in the new basic_render method where the layout was not being applied.
